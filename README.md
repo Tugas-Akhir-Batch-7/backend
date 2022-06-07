@@ -2,5 +2,5 @@
 
 ## DIAGRAM
 
-![GitHub Logo](erd.jpeg)
+![GitHub Logo](erd.png)
 
