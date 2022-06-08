@@ -19,11 +19,11 @@ module.exports = {
       },
       password: {
         type: Sequelize.STRING,
-        allowNull: false
+        // allowNull: false
       },
       email_verified_at: {
         type: Sequelize.DATE,
-        allowNull: false
+        // allowNull: false
       },
       photo: {
         type: Sequelize.STRING,
