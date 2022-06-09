@@ -1,7 +1,7 @@
 const jwb = require("jsonwebtoken")
 const bcrypt = require('bcrypt')
 const mv = require('mv')
-const {QueryTypes} = require('sequelize')
+const {QueryTypes, Op} = require('sequelize')
 
 const db = require('../db/models')
 const {mail, mailOptions} = require('../model/mail');
@@ -21,12 +21,29 @@ const SU = {
 class User{
     static async login(req, res){
         try {
-            const isi = await user.findAll()
-            console.log('jalan')
-            res.json(isi)
+            //variabel
+            const username = req.body.username
+            const password = req.body.password
+
+            //data user
+            const data = await user.findOne({
+                where: {
+                    [Op.or]:{
+                        name: username,
+                        email: username
+                    }
+                }
+            })
+
+            //cek
+            if(!data) throw 'username / email tidak ada'
+            if(!bcrypt.compareSync(password, data.password)) throw 'password salah'
+
+            console.log(data)
+            res.json(data)
         } catch (error) {
             console.log(error)
-            res.status(400).send('terjadi error')
+            res.status(400).json(['terjadi error', error])
         }
     }
     static async register(req, res){
