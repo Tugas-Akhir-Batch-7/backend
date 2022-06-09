@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
   Murid.init({
     photo_ktp: DataTypes.STRING,
     address: DataTypes.STRING,
+    birthday_date : DataTypes.DATE,
     status: DataTypes.STRING,
     id_user: DataTypes.INTEGER,
     id_batch: DataTypes.INTEGER

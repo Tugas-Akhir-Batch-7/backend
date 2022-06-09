@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
       cb(null, new Date().getTime() + '-' +file.originalname)
     }
 })
-const multerImg = multer({ storage: storage }).single('image')
+const multerImg = multer({ storage: storage }).fields([{name: 'profile'}, {name: 'ktp'}])
 
 
 //user
