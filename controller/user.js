@@ -6,6 +6,8 @@ const {QueryTypes} = require('sequelize')
 const db = require('../db/models')
 const {mail, mailOptions} = require('../model/mail');
 const { sequelize } = require("../db/models");
+// const errorHandler = require('../helpers/errorHandler');
+const APIError = require('../helpers/api-error');
 //db
 // const sequelize = db.index
 const user = db.User
@@ -144,6 +146,30 @@ class User{
         } catch (error) {
             console.log(error)
             res.status(400).json(['terjadi error', error])
+        }
+    }
+
+    static async profile(req, res, next){
+        try {
+            // console.log(await user.findAll()
+            // const id = req.params.id
+            const userGet = await user.findByPk(1)
+
+            if(!userGet) throw APIError.badRequest("User tidak ditemukan")
+            
+            userGet.password = undefined
+            return res.status(200).json({
+                success: true,
+                message: 'data user berhasil diambil',
+                data: userGet
+            })
+            // console.log("All users:", JSON.stringify(users, null, 2));
+            res.send(req.params.id)
+        } catch(error) {
+            next(error)
+            // console.log(error)
+            // res.status(400).send('terjadi error')
+
         }
     }
 }

@@ -8,6 +8,8 @@ const admin = require('../controller/admin')
 const guru = require('../controller/guru')
 const murid = require('../controller/murid')
 
+const userRoute = require('./user')
+
 const router = express.Router()
 
 
@@ -29,5 +31,8 @@ const multerImg = multer({ storage: storage }).single('image')
 router.post('/login', user.login)
 router.post('/register', multerImg, user.register)
 router.post('/registerOtp', user.createOtpRegister)
+
+router.use('/user', userRoute)
+
 
 module.exports = router
