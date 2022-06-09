@@ -15,6 +15,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   otp_registrasi.init({
     email: DataTypes.STRING,
+    role: DataTypes.STRING,
     otp: DataTypes.INTEGER,
     valid_until: DataTypes.DATE
   }, {

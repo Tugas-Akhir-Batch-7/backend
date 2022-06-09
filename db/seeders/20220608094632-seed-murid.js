@@ -16,6 +16,7 @@ module.exports = {
         id_user: 3,
         photo_ktp: 'https://avatars0.githubusercontent.com/u/43890987?s=460&v=4',
         address: 'Jl. Raya',
+        birthday_date: new Date(),
         status: 'mendaftar',
         created_at: new Date(),
         updated_at: new Date()

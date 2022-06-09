@@ -13,6 +13,10 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING
       },
+      role: {
+        allowNull: false,
+        type: Sequelize.STRING
+      },
       otp: {
         allowNull: false,
         type: Sequelize.INTEGER
