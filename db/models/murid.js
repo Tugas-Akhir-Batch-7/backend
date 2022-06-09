@@ -11,14 +11,16 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Murid.belongsTo(models.User)
+      Murid.belongsTo(models.User),
+      Murid.belongsTo(models.Batch)
     }
   }
   Murid.init({
     photo_ktp: DataTypes.STRING,
     address: DataTypes.STRING,
     status: DataTypes.STRING,
-    id_user: DataTypes.INTEGER
+    id_user: DataTypes.INTEGER,
+    id_batch: DataTypes.INTEGER
   }, {
     sequelize,
     modelName: 'Murid',
