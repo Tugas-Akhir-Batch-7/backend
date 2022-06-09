@@ -43,7 +43,6 @@ class User {
                     }
                     const token = generateToken(payload);
                     // const cobaVerify = verify(token)
-
                     return res.status(200).json({
                         success: true,
                         message: 'login berhasil',
