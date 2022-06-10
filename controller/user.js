@@ -98,6 +98,10 @@ class User {
                 const birthday = req.body.birthday
                 const ktp = req.files.ktp[0]
 
+                const mrd = await murid.findAll()
+                console.log(mrd)
+                throw 'jalan'
+
                 //validasi img
                 await validImg.valid(ktp, 'img-ktp')
 
