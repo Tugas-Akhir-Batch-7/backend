@@ -1,10 +1,11 @@
 // const jwb = require("jsonwebtoken")
 const bcrypt = require('bcrypt')
 const mv = require('mv')
-const { QueryTypes } = require('sequelize')
+const {QueryTypes, Op} = require('sequelize')
+const validImg = require('../model/validate_image')
 
 const db = require('../db/models')
-const { mail, mailOptions } = require('../model/mail');
+const {mail, mailOptions} = require('../model/mail');
 const { sequelize } = require("../db/models");
 const { checkout } = require("../router/router")
 const ApiError = require('../helpers/api-error');
@@ -128,7 +129,7 @@ class User {
                 //     }, {transaction: t})
                 //     return registrasi
                 // })
-                console.log(result)
+                // console.log(result)
             }else{
                 await user.create({name, email, password, role, photo:profile})
             }
