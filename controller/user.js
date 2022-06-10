@@ -61,7 +61,6 @@ class User{
 
             //cek
             if(!(name && password && email && role && inOtp)) throw 'masukkan semua data'
-            console.log(req.files.profile)
             //image
             if(req.files.profile){ //jika memasukkan photo profile
                 profile = req.files.profile[0]
@@ -90,14 +89,33 @@ class User{
                 await validImg.valid(ktp, 'img-ktp')
 
                 //memasukkan data ke tabel user
-                let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
+                // let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
 
                 //memasukkan data ke tabel murid
-                await sequelize.query(`INSERT INTO "murid" 
-                    ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
-                    VALUES (DEFAULT,?,?,?,?,?,?)`,{
-                    replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(), hasilUser.id]
+                // await sequelize.query(`INSERT INTO "murid" 
+                //     ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
+                //     VALUES (DEFAULT,?,?,?,?,?,?)`,{
+                //     replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(), hasilUser.id]
+                // })
+                const result = await sequelize.transaction(async(t)=>{
+                    // const registrasi = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, {transaction: t})
+                    //tabel user
+                    const registrasi = await sequelize.query(`INSERT INTO "users" 
+                        ("id","name","email","password","role","photo","email_verified_at","created_at","updated_at")
+                        VALUES (DEFAULT,?,?,?,?,?,?,?,?) 
+                        RETURNING "id"`,{
+                        replacements: [name, email, password, role, profile, new Date().toISOString(), new Date().toISOString(), new Date().toISOString()],
+                        type: QueryTypes.INSERT
+                    }, {transaction: t})
+                    //tabel murid
+                    return await sequelize.query(`INSERT INTO "murid" 
+                        ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
+                        VALUES (DEFAULT,?,?,?,?,?,?)`,{
+                        replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(),registrasi[0][0].id],
+                        type: QueryTypes.INSERT
+                    }, {transaction: t})
                 })
+                console.log(result)
             }else{
                 await user.create({name, email, password, role, photo:profile})
             }
@@ -150,9 +168,10 @@ class User{
                 otp = Math.ceil(Math.random() * 1000000)
             }
 
+            //kirim data otp ke database
             await sequelize.query(`INSERT INTO "otp_registrasi" 
                 ("email", "otp", "role", "valid_until", "updated_at", "created_at")
-                VALUES ('${email}', '${otp}', '${role}', '${new Date(new Date().getTime() + (1000*60* timeOtp)).toISOString()}', '${new Date().toISOString()}', '${new Date().toISOString()}')
+                VALUES (?,?,?,?,?,?)
                 ON CONFLICT ("email")
                 DO UPDATE SET
                     "email" = EXCLUDED."email",
@@ -161,7 +180,7 @@ class User{
                     "valid_until" = EXCLUDED.valid_until,
                     "updated_at" = EXCLUDED.updated_at;`,
               {
-                // replacements: [email, otp, new Date(new Date().getTime() + (1000*60* timeOtp)), new Date()],
+                replacements: [email, otp, role, new Date(new Date().getTime() + (1000*60* timeOtp)).toISOString(), new Date().toISOString(), new Date().toISOString()],
                 type: QueryTypes.UPSERT
               }
             )
