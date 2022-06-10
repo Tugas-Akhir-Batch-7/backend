@@ -10,8 +10,9 @@ const { authentication, authorization } = require('../middlewares/auth');
 
 
 // router.get()
-router.get('/murid', (req, res) => {
-    const muridGet = murid.findAll()
+router.get('/murid', async (req, res) => {
+    const muridGet = await murid.findAll()
+    // console.log(muridGet)
     res.json(muridGet)
 })  
 router.get('/profile', authentication, authorization('admin', 'murid', 'guru'), user.profile);
