@@ -2,7 +2,7 @@
 const bcrypt = require('bcrypt')
 const mv = require('mv')
 const {QueryTypes, Op} = require('sequelize')
-const validImg = require('../model/validate_image')
+const validImg = require('../middlewares/validate_image')
 
 const db = require('../db/models')
 const {mail, mailOptions} = require('../model/mail');
@@ -98,10 +98,6 @@ class User {
                 const birthday = req.body.birthday
                 const ktp = req.files.ktp[0]
 
-                const mrd = await murid.findAll()
-                console.log(mrd)
-                throw 'jalan'
-
                 //validasi img
                 await validImg.valid(ktp, 'img-ktp')
 
@@ -109,11 +105,16 @@ class User {
                 let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
 
                 //memasukkan data ke tabel murid
-                await sequelize.query(`INSERT INTO "murid" 
-                    ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
-                    VALUES (DEFAULT,?,?,?,?,?,?)`,{
-                    replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(), hasilUser.id]
+                await murid.create({photo_ktp: ktp.filename, address, birthday, birthday_date:new Date(), id_user:hasilUser.id})
+
+                await sequelize.transaction(async t=>{
+                    const registrasi = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
                 })
+                // await sequelize.query(`INSERT INTO "murid" 
+                //     ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
+                //     VALUES (DEFAULT,?,?,?,?,?,?)`,{
+                //     replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(), hasilUser.id]
+                // })
                 // const result = await sequelize.transaction(async(t)=>{
                 //     // const registrasi = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, {transaction: t})
                 //     //tabel user
