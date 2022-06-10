@@ -10,7 +10,7 @@ const router = require('./router/router')
 const app = express();
 const port = process.env.PORT || 5000;
 
-// const errorHandler = require('./middlewares/error-handler');
+const errorHandler = require('./middlewares/error-handler');
 
 // const routers = require('./routes'); // mengarah ke index.js di folder routes
 
@@ -23,9 +23,9 @@ app.use(bodyParser.urlencoded({ extented: false }))
 
 app.use(router)
 
-app.get('/', (req, res) => res.send('Hello World!'));
+// app.get('/', (req, res) => res.send('Hello World!'));
 
-// app.use(errorHandler)
+app.use(errorHandler)
 
 
 //handle route yang tidak ada

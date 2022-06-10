@@ -1,13 +1,14 @@
-const jwb = require("jsonwebtoken")
+// const jwb = require("jsonwebtoken")
 const bcrypt = require('bcrypt')
 const mv = require('mv')
-const {QueryTypes, Op} = require('sequelize')
-const validImg = require('../model/validate_image')
+const { QueryTypes } = require('sequelize')
 
 const db = require('../db/models')
-const {mail, mailOptions} = require('../model/mail');
+const { mail, mailOptions } = require('../model/mail');
 const { sequelize } = require("../db/models");
 const { checkout } = require("../router/router")
+const ApiError = require('../helpers/api-error');
+const { generateToken, verify } = require("../helpers/jwt-auth")
 //db
 // const sequelize = db.index
 const user = db.User
@@ -21,35 +22,46 @@ const SU = {
     password: 'faishalSample__07'
 }
 
-class User{
-    static async login(req, res){
+class User {
+    static async login(req, res, next) {
         try {
-            //variabel
-            const username = req.body.username
-            const password = req.body.password
-
-            //data user
-            const data = await user.findOne({
+            const { email, password } = req.body;
+            const userGet = await user.findOne({
                 where: {
-                    [Op.or]:{
-                        name: username,
-                        email: username
-                    }
+                    email: email
                 }
-            })
-
-            //cek
-            if(!data) throw 'username / email tidak ada'
-            if(!bcrypt.compareSync(password, data.password)) throw 'password salah'
-
-            console.log(data)
-            res.json(data)
+            });
+            if (userGet) {
+                // console.log(password)
+                const isPassword = bcrypt.compareSync(password, userGet.password);
+                // console.log(isPassword)
+                if (isPassword) {
+                    userGet.password = undefined;
+                    const payload = {
+                        id: userGet.id,
+                        name: userGet.name,
+                        email: userGet.email,
+                        role: userGet.role,
+                    }
+                    const token = generateToken(payload);
+                    // const cobaVerify = verify(token)
+                    return res.status(200).json({
+                        success: true,
+                        message: 'login berhasil',
+                        data: userGet,
+                        token: token,
+                        // cobaVerify
+                    })
+                }
+            }
+            throw ApiError.badRequest('Username or password is incorrect');
         } catch (error) {
-            console.log(error)
-            res.status(400).json(['terjadi error', error])
+            next(error)
+            // console.log(error)
+            // res.status(400).send('terjadi error')
         }
     }
-    static async register(req, res){
+    static async register(req, res) {
         try {
             //variabel
             const name = req.body.username
@@ -71,8 +83,8 @@ class User{
             }
 
             //cek otp
-            let otp = await otpRegistrasi.findOne({where:{otp: inOtp}})
-            if(!otp) throw 'otp tidak valid'
+            let otp = await otpRegistrasi.findOne({ where: { otp: inOtp } })
+            if (!otp) throw 'otp tidak valid'
 
             //cek data
             if(new Date() > otp.valid_until) throw 'waktu otp limit'
@@ -130,42 +142,42 @@ class User{
             res.status(400).json(['terjadi error', error])
         }
     }
-    static async createOtpRegister(req, res){
+    static async createOtpRegister(req, res) {
         try {
             //variabel
             let emailOtp
             const email = req.body.email
             const role = req.body.role
             const usernameAdmin = req.body.usernameAdmin
-            
+
             //cek email
-            if(!(email && role)) throw 'lengkapi semua data'
+            if (!(email && role)) throw 'lengkapi semua data'
 
             //role
-            if(role == 'admin'){
+            if (role == 'admin') {
                 emailOtp = SU.email
-            }else if(role == 'guru'){
+            } else if (role == 'guru') {
                 //cek penerima otp
-                if(!usernameAdmin) throw 'masukkan username admin untuk menerima otp'
+                if (!usernameAdmin) throw 'masukkan username admin untuk menerima otp'
                 //mencari email penerima
                 emailOtp = await user.findOne({
                     attributes: ['email'],
-                    where: {name: usernameAdmin, role: 'admin'}
+                    where: { name: usernameAdmin, role: 'admin' }
                 })
                 //cek adat tidaknya username penerima email otp
-                if(!emailOtp) throw 'username tidak ada'
+                if (!emailOtp) throw 'username tidak ada'
                 emailOtp = emailOtp.email
-            }else if(role == 'murid'){
+            } else if (role == 'murid') {
                 //cek penerima otp
-                if(!req.body.email) throw 'masukkan email'
+                if (!req.body.email) throw 'masukkan email'
                 emailOtp = req.body.email
-            }else{
+            } else {
                 throw 'role tidak tersedia'
             }
 
             //otp
             let otp = 0
-            while(otp < 100000 || otp > 999999){
+            while (otp < 100000 || otp > 999999) {
                 otp = Math.ceil(Math.random() * 1000000)
             }
 
@@ -189,8 +201,8 @@ class User{
             //kirim otp via email
             mailOptions.to = emailOtp
             mailOptions.text = `code otp\n${otp}`
-            mail.sendMail(mailOptions, (err, info)=>{
-                if(err){
+            mail.sendMail(mailOptions, (err, info) => {
+                if (err) {
                     console.log(err)
                     throw 'error saat kirim otp via email'
                 }
@@ -199,6 +211,30 @@ class User{
         } catch (error) {
             console.log(error)
             res.status(400).json(['terjadi error', error])
+        }
+    }
+
+    static async profile(req, res, next) {
+        try {
+            // console.log(await user.findAll()
+            // const id = req.params.id
+            const userGet = await user.findByPk(1)
+
+            if (!userGet) throw ApiError.badRequest("User tidak ditemukan")
+
+            userGet.password = undefined
+            return res.status(200).json({
+                success: true,
+                message: 'data user berhasil diambil',
+                data: userGet
+            })
+            // console.log("All users:", JSON.stringify(users, null, 2));
+            res.send(req.params.id)
+        } catch (error) {
+            next(error)
+            // console.log(error)
+            // res.status(400).send('terjadi error')
+
         }
     }
 }
