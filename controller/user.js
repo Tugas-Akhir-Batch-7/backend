@@ -7,12 +7,14 @@ const validImg = require('../model/validate_image')
 const db = require('../db/models')
 const {mail, mailOptions} = require('../model/mail');
 const { sequelize } = require("../db/models");
+const { checkout } = require("../router/router")
 //db
 // const sequelize = db.index
 const user = db.User
+const murid = db.Murid
 const otpRegistrasi = db.otp_registrasi
 
-const timeOtp = 15
+const timeOtp = 150
 
 const SU = {
     email: 'faishalsample07@gmail.com',
@@ -80,16 +82,27 @@ class User{
 
             //kirim data register ke database
             if(role == 'murid'){
-                const addres = req.body.addres
+                const address = req.body.address
                 const birthday = req.body.birthday
                 const ktp = req.files.ktp[0]
+
+                //validasi img
                 await validImg.valid(ktp, 'img-ktp')
-                await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
+
+                //memasukkan data ke tabel user
+                let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
+
+                //memasukkan data ke tabel murid
+                await sequelize.query(`INSERT INTO "murid" 
+                    ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
+                    VALUES (DEFAULT,?,?,?,?,?,?)`,{
+                    replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(), hasilUser.id]
+                })
             }else{
                 await user.create({name, email, password, role, photo:profile})
             }
 
-            //menghapus data otp jika sudah
+            //menghapus data otp jika sudah register
             await otpRegistrasi.destroy({where: {email}})
 
             res.send('register berhasil')
