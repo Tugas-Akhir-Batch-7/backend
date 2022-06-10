@@ -1,19 +1,22 @@
 // const jwb = require("jsonwebtoken")
 const bcrypt = require('bcrypt')
 const mv = require('mv')
-const { QueryTypes } = require('sequelize')
+const {QueryTypes, Op} = require('sequelize')
+const validImg = require('../model/validate_image')
 
 const db = require('../db/models')
-const { mail, mailOptions } = require('../model/mail');
+const {mail, mailOptions} = require('../model/mail');
 const { sequelize } = require("../db/models");
+const { checkout } = require("../router/router")
 const ApiError = require('../helpers/api-error');
 const { generateToken, verify } = require("../helpers/jwt-auth")
 //db
 // const sequelize = db.index
 const user = db.User
+const murid = db.Murid
 const otpRegistrasi = db.otp_registrasi
 
-const timeOtp = 15
+const timeOtp = 150
 
 const SU = {
     email: 'faishalsample07@gmail.com',
@@ -70,8 +73,7 @@ class User {
             let profile
 
             //cek
-            if (!(name && password && email && role && inOtp)) throw 'masukkan semua data'
-            console.log(req.files.profile)
+            if(!(name && password && email && role && inOtp)) throw 'masukkan semua data'
             //image
             if (req.files.profile) { //jika memasukkan photo profile
                 profile = req.files.profile[0]
@@ -91,18 +93,49 @@ class User {
             if (!(role == otp.role)) throw 'role berbeda'
 
             //kirim data register ke database
-            if (role == 'murid') {
-                const addres = req.body.addres
+            if(role == 'murid'){
+                const address = req.body.address
                 const birthday = req.body.birthday
                 const ktp = req.files.ktp[0]
+
+                //validasi img
                 await validImg.valid(ktp, 'img-ktp')
-                await user.create({ name, email, password, role, email_verified_at: new Date(), photo: profile })
-            } else {
-                await user.create({ name, email, password, role, photo: profile })
+
+                //memasukkan data ke tabel user
+                let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
+
+                //memasukkan data ke tabel murid
+                await sequelize.query(`INSERT INTO "murid" 
+                    ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
+                    VALUES (DEFAULT,?,?,?,?,?,?)`,{
+                    replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(), hasilUser.id]
+                })
+                // const result = await sequelize.transaction(async(t)=>{
+                //     // const registrasi = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, {transaction: t})
+                //     //tabel user
+                //     const registrasi = await sequelize.query(`INSERT INTO "users" 
+                //         ("id","name","email","password","role","photo","email_verified_at","created_at","updated_at")
+                //         VALUES (DEFAULT,?,?,?,?,?,?,?,?) 
+                //         RETURNING "id"`,{
+                //         replacements: [name, email, password, role, profile, new Date().toISOString(), new Date().toISOString(), new Date().toISOString()],
+                //         type: QueryTypes.INSERT
+                //     }, {transaction: t})
+                //     //tabel murid
+                //     await registrasi.query(`INSERT INTO "murid" 
+                //         ("id","photo_ktp","address","birthday_daate","created_at","updated_at","id_user")
+                //         VALUES (DEFAULT,?,?,?,?,?,?)`,{
+                //         replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(),registrasi[0][0].id],
+                //         type: QueryTypes.INSERT
+                //     }, {transaction: t})
+                //     return registrasi
+                // })
+                // console.log(result)
+            }else{
+                await user.create({name, email, password, role, photo:profile})
             }
 
-            //menghapus data otp jika sudah
-            await otpRegistrasi.destroy({ where: { email } })
+            //menghapus data otp jika sudah register
+            await otpRegistrasi.destroy({where: {email}})
 
             res.send('register berhasil')
         } catch (error) {
@@ -149,9 +182,10 @@ class User {
                 otp = Math.ceil(Math.random() * 1000000)
             }
 
+            //kirim data otp ke database
             await sequelize.query(`INSERT INTO "otp_registrasi" 
                 ("email", "otp", "role", "valid_until", "updated_at", "created_at")
-                VALUES ('${email}', '${otp}', '${role}', '${new Date(new Date().getTime() + (1000 * 60 * timeOtp)).toISOString()}', '${new Date().toISOString()}', '${new Date().toISOString()}')
+                VALUES (?,?,?,?,?,?)
                 ON CONFLICT ("email")
                 DO UPDATE SET
                     "email" = EXCLUDED."email",
@@ -159,10 +193,10 @@ class User {
                     "otp" = EXCLUDED."otp",
                     "valid_until" = EXCLUDED.valid_until,
                     "updated_at" = EXCLUDED.updated_at;`,
-                {
-                    // replacements: [email, otp, new Date(new Date().getTime() + (1000*60* timeOtp)), new Date()],
-                    type: QueryTypes.UPSERT
-                }
+              {
+                replacements: [email, otp, role, new Date(new Date().getTime() + (1000*60* timeOtp)).toISOString(), new Date().toISOString(), new Date().toISOString()],
+                type: QueryTypes.UPSERT
+              }
             )
 
             //kirim otp via email
