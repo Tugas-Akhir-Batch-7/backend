@@ -63,6 +63,7 @@ class User {
         }
     }
     static async register(req, res) {
+        const t = await sequelize.transaction();
         try {
             //variabel
             const name = req.body.username
@@ -100,41 +101,14 @@ class User {
 
                 //validasi img
                 await validImg.valid(ktp, 'img-ktp')
-
+                
                 //memasukkan data ke tabel user
-                let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
+                let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, { transaction: t })
 
                 //memasukkan data ke tabel murid
-                await murid.create({photo_ktp: ktp.filename, address, birthday, birthday_date:new Date(), id_user:hasilUser.id})
-
-                await sequelize.transaction(async t=>{
-                    const registrasi = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
-                })
-                // await sequelize.query(`INSERT INTO "murid" 
-                //     ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
-                //     VALUES (DEFAULT,?,?,?,?,?,?)`,{
-                //     replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(), hasilUser.id]
-                // })
-                // const result = await sequelize.transaction(async(t)=>{
-                //     // const registrasi = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, {transaction: t})
-                //     //tabel user
-                //     const registrasi = await sequelize.query(`INSERT INTO "users" 
-                //         ("id","name","email","password","role","photo","email_verified_at","created_at","updated_at")
-                //         VALUES (DEFAULT,?,?,?,?,?,?,?,?) 
-                //         RETURNING "id"`,{
-                //         replacements: [name, email, password, role, profile, new Date().toISOString(), new Date().toISOString(), new Date().toISOString()],
-                //         type: QueryTypes.INSERT
-                //     }, {transaction: t})
-                //     //tabel murid
-                //     await registrasi.query(`INSERT INTO "murid" 
-                //         ("id","photo_ktp","address","birthday_daate","created_at","updated_at","id_user")
-                //         VALUES (DEFAULT,?,?,?,?,?,?)`,{
-                //         replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(),registrasi[0][0].id],
-                //         type: QueryTypes.INSERT
-                //     }, {transaction: t})
-                //     return registrasi
-                // })
-                // console.log(result)
+                await murid.create({photo_ktp: ktp.filename, address, birthday, birthday_date:new Date(), id_user:1000}, { transaction: t })
+                
+                await t.commit()
             }else{
                 await user.create({name, email, password, role, photo:profile})
             }
@@ -144,6 +118,7 @@ class User {
 
             res.send('register berhasil')
         } catch (error) {
+            await t.rollback()
             console.log(error)
             res.status(400).json(['terjadi error', error])
         }
