@@ -52,7 +52,7 @@ class User {
                     })
                 }
             }
-            throw ApiError.badRequest('Username or password is incorrect');
+            throw ApiError.badRequest('Username atau password salah');
         } catch (error) {
             next(error)
             // console.log(error)
