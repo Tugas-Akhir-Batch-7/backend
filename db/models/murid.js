@@ -11,8 +11,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Murid.belongsTo(models.User),
-      Murid.belongsTo(models.Batch)
+      Murid.belongsTo(models.User, { targetKey: 'id', foreignKey: 'id_user' }),
+      Murid.belongsTo(models.Batch, { targetKey: 'id', foreignKey: 'id_batch' })
     }
   }
   Murid.init({
