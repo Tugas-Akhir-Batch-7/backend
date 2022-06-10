@@ -67,17 +67,17 @@ class User {
             const email = req.body.email
             const role = req.body.role
             const inOtp = req.body.otp
-            let profile 
+            let profile
 
             //cek
-            if(!(name && password && email && role && inOtp)) throw 'masukkan semua data'
+            if (!(name && password && email && role && inOtp)) throw 'masukkan semua data'
             console.log(req.files.profile)
             //image
-            if(req.files.profile){ //jika memasukkan photo profile
+            if (req.files.profile) { //jika memasukkan photo profile
                 profile = req.files.profile[0]
                 await validImg.valid(profile, 'img-profile')
                 profile = profile.filename
-            }else{
+            } else {
                 profile = 'default.png'
             }
 
@@ -86,23 +86,23 @@ class User {
             if (!otp) throw 'otp tidak valid'
 
             //cek data
-            if(new Date() > otp.valid_until) throw 'waktu otp limit'
-            if(!(email == otp.email)) throw 'data tidak lengkap'
-            if(!(role == otp.role)) throw 'role berbeda'
+            if (new Date() > otp.valid_until) throw 'waktu otp limit'
+            if (!(email == otp.email)) throw 'data tidak lengkap'
+            if (!(role == otp.role)) throw 'role berbeda'
 
             //kirim data register ke database
-            if(role == 'murid'){
+            if (role == 'murid') {
                 const addres = req.body.addres
                 const birthday = req.body.birthday
                 const ktp = req.files.ktp[0]
                 await validImg.valid(ktp, 'img-ktp')
-                await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
-            }else{
-                await user.create({name, email, password, role, photo:profile})
+                await user.create({ name, email, password, role, email_verified_at: new Date(), photo: profile })
+            } else {
+                await user.create({ name, email, password, role, photo: profile })
             }
 
             //menghapus data otp jika sudah
-            await otpRegistrasi.destroy({where: {email}})
+            await otpRegistrasi.destroy({ where: { email } })
 
             res.send('register berhasil')
         } catch (error) {
@@ -151,7 +151,7 @@ class User {
 
             await sequelize.query(`INSERT INTO "otp_registrasi" 
                 ("email", "otp", "role", "valid_until", "updated_at", "created_at")
-                VALUES ('${email}', '${otp}', '${role}', '${new Date(new Date().getTime() + (1000*60* timeOtp)).toISOString()}', '${new Date().toISOString()}', '${new Date().toISOString()}')
+                VALUES ('${email}', '${otp}', '${role}', '${new Date(new Date().getTime() + (1000 * 60 * timeOtp)).toISOString()}', '${new Date().toISOString()}', '${new Date().toISOString()}')
                 ON CONFLICT ("email")
                 DO UPDATE SET
                     "email" = EXCLUDED."email",
@@ -184,8 +184,16 @@ class User {
     static async profile(req, res, next) {
         try {
             // console.log(await user.findAll()
+            let id
+            if (req.params.id) {
+                id = req.params.id
+            } else {
+                id = req.user.id
+            }
+            // console.log(req.params.id)
+            // return
             // const id = req.params.id
-            const userGet = await user.findByPk(1)
+            const userGet = await user.findByPk(id)
 
             if (!userGet) throw ApiError.badRequest("User tidak ditemukan")
 
