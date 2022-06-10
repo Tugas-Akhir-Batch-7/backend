@@ -108,12 +108,13 @@ class User{
                         type: QueryTypes.INSERT
                     }, {transaction: t})
                     //tabel murid
-                    return await sequelize.query(`INSERT INTO "murid" 
-                        ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
+                    await registrasi.query(`INSERT INTO "murid" 
+                        ("id","photo_ktp","address","birthday_daate","created_at","updated_at","id_user")
                         VALUES (DEFAULT,?,?,?,?,?,?)`,{
                         replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(),registrasi[0][0].id],
                         type: QueryTypes.INSERT
                     }, {transaction: t})
+                    return registrasi
                 })
                 console.log(result)
             }else{
