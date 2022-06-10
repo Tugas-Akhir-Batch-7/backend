@@ -55,7 +55,7 @@ class User {
                     })
                 }
             }
-            throw ApiError.badRequest('Username or password is incorrect');
+            throw ApiError.badRequest('Username atau password salah');
         } catch (error) {
             next(error)
             // console.log(error)
@@ -70,16 +70,16 @@ class User {
             const email = req.body.email
             const role = req.body.role
             const inOtp = req.body.otp
-            let profile 
+            let profile
 
             //cek
             if(!(name && password && email && role && inOtp)) throw 'masukkan semua data'
             //image
-            if(req.files.profile){ //jika memasukkan photo profile
+            if (req.files.profile) { //jika memasukkan photo profile
                 profile = req.files.profile[0]
                 await validImg.valid(profile, 'img-profile')
                 profile = profile.filename
-            }else{
+            } else {
                 profile = 'default.png'
             }
 
@@ -88,9 +88,9 @@ class User {
             if (!otp) throw 'otp tidak valid'
 
             //cek data
-            if(new Date() > otp.valid_until) throw 'waktu otp limit'
-            if(!(email == otp.email)) throw 'data tidak lengkap'
-            if(!(role == otp.role)) throw 'role berbeda'
+            if (new Date() > otp.valid_until) throw 'waktu otp limit'
+            if (!(email == otp.email)) throw 'data tidak lengkap'
+            if (!(role == otp.role)) throw 'role berbeda'
 
             //kirim data register ke database
             if(role == 'murid'){
@@ -222,8 +222,16 @@ class User {
     static async profile(req, res, next) {
         try {
             // console.log(await user.findAll()
+            let id
+            if (req.params.id) {
+                id = req.params.id
+            } else {
+                id = req.user.id
+            }
+            // console.log(req.params.id)
+            // return
             // const id = req.params.id
-            const userGet = await user.findByPk(1)
+            const userGet = await user.findByPk(id)
 
             if (!userGet) throw ApiError.badRequest("User tidak ditemukan")
 
