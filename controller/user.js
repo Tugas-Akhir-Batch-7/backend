@@ -89,33 +89,33 @@ class User{
                 await validImg.valid(ktp, 'img-ktp')
 
                 //memasukkan data ke tabel user
-                // let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
+                let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
 
                 //memasukkan data ke tabel murid
-                // await sequelize.query(`INSERT INTO "murid" 
-                //     ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
-                //     VALUES (DEFAULT,?,?,?,?,?,?)`,{
-                //     replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(), hasilUser.id]
-                // })
-                const result = await sequelize.transaction(async(t)=>{
-                    // const registrasi = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, {transaction: t})
-                    //tabel user
-                    const registrasi = await sequelize.query(`INSERT INTO "users" 
-                        ("id","name","email","password","role","photo","email_verified_at","created_at","updated_at")
-                        VALUES (DEFAULT,?,?,?,?,?,?,?,?) 
-                        RETURNING "id"`,{
-                        replacements: [name, email, password, role, profile, new Date().toISOString(), new Date().toISOString(), new Date().toISOString()],
-                        type: QueryTypes.INSERT
-                    }, {transaction: t})
-                    //tabel murid
-                    await registrasi.query(`INSERT INTO "murid" 
-                        ("id","photo_ktp","address","birthday_daate","created_at","updated_at","id_user")
-                        VALUES (DEFAULT,?,?,?,?,?,?)`,{
-                        replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(),registrasi[0][0].id],
-                        type: QueryTypes.INSERT
-                    }, {transaction: t})
-                    return registrasi
+                await sequelize.query(`INSERT INTO "murid" 
+                    ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
+                    VALUES (DEFAULT,?,?,?,?,?,?)`,{
+                    replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(), hasilUser.id]
                 })
+                // const result = await sequelize.transaction(async(t)=>{
+                //     // const registrasi = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, {transaction: t})
+                //     //tabel user
+                //     const registrasi = await sequelize.query(`INSERT INTO "users" 
+                //         ("id","name","email","password","role","photo","email_verified_at","created_at","updated_at")
+                //         VALUES (DEFAULT,?,?,?,?,?,?,?,?) 
+                //         RETURNING "id"`,{
+                //         replacements: [name, email, password, role, profile, new Date().toISOString(), new Date().toISOString(), new Date().toISOString()],
+                //         type: QueryTypes.INSERT
+                //     }, {transaction: t})
+                //     //tabel murid
+                //     await registrasi.query(`INSERT INTO "murid" 
+                //         ("id","photo_ktp","address","birthday_daate","created_at","updated_at","id_user")
+                //         VALUES (DEFAULT,?,?,?,?,?,?)`,{
+                //         replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(),registrasi[0][0].id],
+                //         type: QueryTypes.INSERT
+                //     }, {transaction: t})
+                //     return registrasi
+                // })
                 console.log(result)
             }else{
                 await user.create({name, email, password, role, photo:profile})
