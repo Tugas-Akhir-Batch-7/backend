@@ -31,6 +31,9 @@ const multerImg = multer({ storage: storage }).fields([{name: 'profile'}, {name:
 router.post('/login', user.login)
 router.post('/register', multerImg, user.register)
 router.post('/registerOtp', user.createOtpRegister)
+router.post('/resetOtp', user.createOtpReset)
+router.post('/validResetOtp', user.validResetOtp)
+router.post('/resetPassword', user.resetPassword)
 
 router.use('/user', userRoute)
 

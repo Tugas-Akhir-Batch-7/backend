@@ -15,6 +15,7 @@ const { generateToken, verify } = require("../helpers/jwt-auth")
 const user = db.User
 const murid = db.Murid
 const otpRegistrasi = db.otp_registrasi
+const totp = db.Otp
 
 const timeOtp = 150
 
@@ -62,7 +63,7 @@ class User {
             // res.status(400).send('terjadi error')
         }
     }
-    static async register(req, res) {
+    static async register(req, res, next) {
         const t = await sequelize.transaction();
         try {
             //variabel
@@ -107,7 +108,7 @@ class User {
 
                 //memasukkan data ke tabel murid
                 await murid.create({photo_ktp: ktp.filename, address, birthday, birthday_date:new Date(), id_user:1000}, { transaction: t })
-                
+
                 await t.commit()
             }else{
                 await user.create({name, email, password, role, photo:profile})
@@ -119,11 +120,12 @@ class User {
             res.send('register berhasil')
         } catch (error) {
             await t.rollback()
-            console.log(error)
-            res.status(400).json(['terjadi error', error])
+            next(error)
+            // console.log(error)
+            // res.status(400).json(['terjadi error', error])
         }
     }
-    static async createOtpRegister(req, res) {
+    static async createOtpRegister(req, res, next) {
         try {
             //variabel
             let emailOtp
@@ -190,11 +192,78 @@ class User {
             })
             res.send('behasil')
         } catch (error) {
+            next(error)
+            // console.log(error)
+            // res.status(400).json(['terjadi error', error])
+        }
+    }
+    static async createOtpReset(req, res, next){
+        try {
+            //otp
+            let otp = 0
+            while (otp < 100000 || otp > 999999) {
+                otp = Math.ceil(Math.random() * 1000000)
+            }
+            
+            //kirim data otp ke database
+            await sequelize.query(`INSERT INTO "otp" 
+                ("user_id", "otp", "valid_until", "updated_at", "created_at")
+                VALUES (?,?,?,?,?)
+                ON CONFLICT ("user_id")
+                DO UPDATE SET
+                    "otp" = EXCLUDED."otp",
+                    "valid_until" = EXCLUDED.valid_until,
+                    "updated_at" = EXCLUDED.updated_at;`,
+              {
+                replacements: [req.body.id, otp, new Date(new Date().getTime() + (1000*60* timeOtp)).toISOString(), new Date().toISOString(), new Date().toISOString()],
+                type: QueryTypes.UPSERT
+              }
+            )
+            
+            //kirim otp via email
+            mailOptions.to = req.body.email
+            mailOptions.text = `code otp\n${otp}`
+            mail.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                    console.log(err)
+                    throw 'error saat kirim otp via email'
+                }
+            })
+            res.send('berhasil')
+        } catch (error) {
+            // next()
             console.log(error)
             res.status(400).json(['terjadi error', error])
         }
     }
+    static async validResetOtp(req, res, next){
+        try {
+            //validasi otp
+            if(!(await totp.findOne({where:{user_id:req.body.id, otp: req.body.otp}}))) throw 'otp salah'
+            res.send('berhasil')
+        } catch (error) {
+            // next()
+            console.log(error)
+            res.status(400).json(['terjadi error', error])
+        }
+    }
+    static async resetPassword(req, res, next){
+        try {
+             //verifikasi lebih lanjut
+            if(!(await totp.findOne({where:{user_id:req.body.id, otp: req.body.otp}}))) throw 'otp atau id salah'
 
+            //mengubah password
+            await user.update({password: bcrypt.hashSync(req.body.password, 10)}, {where:{id:req.body.id}})
+            
+            //menghapus data otp jika sudah register
+            await totp.destroy({where: {user_id: req.body.id}})
+            res.send('berhasil')
+        } catch (error) {
+            // next()
+            console.log(error)
+            res.status(400).json(['terjadi error', error])
+        }
+    }
     static async profile(req, res, next) {
         try {
             // console.log(await user.findAll()
