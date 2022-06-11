@@ -1,36 +1,40 @@
 'use strict';
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('murid', {
+    await queryInterface.createTable('pertemuan', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      photo_ktp: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      address: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      birthday_date: {
-        type: Sequelize.DATE,
-        allowNull: false,
-      },
-      status: {
-        type: Sequelize.ENUM('belum mendaftar', 'mendaftar', 'terdaftar', 'alumni', 'keluar'),
-        defaultValue: 'belum mendaftar'
-      },
-      id_user: {
+      id_batch: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: "users",
+          model: "batch",
         },
-        onDelete: 'cascade',
+        onDelete: 'set null',
         onUpdate: 'cascade'
+      },
+      id_guru: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "guru",
+        },
+        onDelete: 'set null',
+        onUpdate: 'cascade'
+      },
+      name: {
+        type: Sequelize.STRING
+      },
+      date: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.NOW
+      },
+      upload: {
+        type: Sequelize.JSON
       },
       created_at: {
         allowNull: false,
@@ -43,6 +47,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('murid');
+    await queryInterface.dropTable('pertemuan');
   }
 };
