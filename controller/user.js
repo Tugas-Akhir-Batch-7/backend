@@ -1,15 +1,16 @@
 // const jwb = require("jsonwebtoken")
 const bcrypt = require('bcrypt')
-const mv = require('mv')
 const {QueryTypes, Op} = require('sequelize')
-const validImg = require('../middlewares/validate_image')
+var passport = require('passport'), OAuthStrategy = require('passport-oauth').OAuthStrategy;
 
+const validImg = require('../middlewares/validate_image')
 const db = require('../db/models')
-const {mail, mailOptions} = require('../model/mail');
 const { sequelize } = require("../db/models");
+const {mail, mailOptions} = require('../model/mail');
 const { checkout } = require("../router/router")
 const ApiError = require('../helpers/api-error');
 const { generateToken, verify } = require("../helpers/jwt-auth")
+
 //db
 // const sequelize = db.index
 const user = db.User
@@ -17,7 +18,22 @@ const murid = db.Murid
 const otpRegistrasi = db.otp_registrasi
 const totp = db.Otp
 
-const timeOtp = 150
+const timeOtp = 150 //minute
+
+passport.use('provider', new OAuthStrategy({
+  requestTokenURL: 'https://oauth2.googleapis.com/token',
+  accessTokenURL: 'https://accounts.google.com/o/oauth2/auth',
+  userAuthorizationURL: 'https://www.googleapis.com/oauth2/v1/certs',
+  consumerKey: '519018642220-egf6gb0qpeg5g5djmup1i8et73ee1khs.apps.googleusercontent.com',
+  consumerSecret: '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',
+  callbackURL: 'http://localhost:3000/authGoogleCB'
+  },
+  function(token, tokenSecret, profile, done) {
+    done(err, user);
+    // User.findOrCreate(..., function(err, user) {
+    // });
+  }
+));
 
 const SU = {
     email: 'faishalsample07@gmail.com',
@@ -25,6 +41,9 @@ const SU = {
 }
 
 class User {
+    static async google(req, res, next){
+
+    }
     static async login(req, res, next) {
         try {
             const { email, password } = req.body;

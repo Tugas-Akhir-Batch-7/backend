@@ -1,16 +1,24 @@
 //setup npm
 const express = require('express');
 const bodyParser = require('body-parser')
+var session = require('express-session')
 
 //setup import
 const db = require('./db/models')
 const router = require('./router/router')
+const errorHandler = require('./middlewares/error-handler');
 
 //setup express
 const app = express();
 const port = process.env.PORT || 5000;
 
-const errorHandler = require('./middlewares/error-handler');
+//session
+app.use(session({
+    secret: 'sessoin',
+    resave: true,
+    saveUninitialized: false,
+  }));
+
 
 // const routers = require('./routes'); // mengarah ke index.js di folder routes
 

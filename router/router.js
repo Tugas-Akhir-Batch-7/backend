@@ -9,6 +9,7 @@ const guru = require('../controller/guru')
 const murid = require('../controller/murid')
 
 const userRoute = require('./user')
+const authGoogle = require('./google')
 
 const router = express.Router()
 
@@ -36,6 +37,7 @@ router.post('/validResetOtp', user.validResetOtp)
 router.post('/resetPassword', user.resetPassword)
 
 router.use('/user', userRoute)
+router.use('/auth/google', authGoogle)
 
 
 module.exports = router
