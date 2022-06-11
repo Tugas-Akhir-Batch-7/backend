@@ -9,6 +9,10 @@ const guru = require('../controller/guru')
 const murid = require('../controller/murid')
 
 const userRoute = require('./user')
+const adminRoute = require('./admin')
+const guruRoute = require('./guru')
+const muridRoute = require('./murid')
+
 
 const router = express.Router()
 
@@ -33,6 +37,11 @@ router.post('/register', multerImg, user.register)
 router.post('/registerOtp', user.createOtpRegister)
 
 router.use('/user', userRoute)
+router.use('/admin', adminRoute)
+router.use('/guru', guruRoute)
+router.use('/murid', muridRoute)
+
+
 
 
 module.exports = router
