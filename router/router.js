@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
       cb(null, new Date().getTime() + '-' +file.originalname)
     }
 })
-const multerImg = multer({ storage: storage }).fields([{name: 'profile'}, {name: 'ktp'}])
+const multerImg = multer({ storage: storage }).fields([{name: 'profile'}, {name: 'ktp'}, {name: 'file'}])
 
 
 //user
@@ -35,6 +35,9 @@ router.post('/registerOtp', user.createOtpRegister)
 router.post('/resetOtp', user.createOtpReset)
 router.post('/validResetOtp', user.validResetOtp)
 router.post('/resetPassword', user.resetPassword)
+
+//guru
+router.post('/guru/addPertemuan', multerImg, guru.addPertemuan)
 
 router.use('/user', userRoute)
 router.use('/auth/google', authGoogle)

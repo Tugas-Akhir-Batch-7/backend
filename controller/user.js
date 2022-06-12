@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt')
 const {QueryTypes, Op} = require('sequelize')
 var passport = require('passport'), OAuthStrategy = require('passport-oauth').OAuthStrategy;
 
-const validImg = require('../middlewares/validate_image')
+const validFile = require('../middlewares/validate_file')
 const db = require('../db/models')
 const { sequelize } = require("../db/models");
 const {mail, mailOptions} = require('../model/mail');
@@ -98,7 +98,7 @@ class User {
             //image
             if (req.files.profile) { //jika memasukkan photo profile
                 profile = req.files.profile[0]
-                await validImg.valid(profile, 'img-profile')
+                await validFile.validImg(profile, 'img-profile')
                 profile = profile.filename
             } else {
                 profile = 'default.png'
@@ -120,7 +120,7 @@ class User {
                 const ktp = req.files.ktp[0]
 
                 //validasi img
-                await validImg.valid(ktp, 'img-ktp')
+                await validFile.validImg(ktp, 'img-ktp')
                 
                 //memasukkan data ke tabel user
                 let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, { transaction: t })

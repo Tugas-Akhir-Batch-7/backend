@@ -17,8 +17,8 @@ module.exports = {
        name:'materi ujian',
        upload:`{
         "file":["123.jpg", "file.docx"],
-        "text":{"catatan": "materi ujian"},
-        "url":{"google": "google.com"}
+        "text":["materi ujian, silahkan dipejari di google"],
+        "link":["google.com"]
        }`,
        created_at: new Date(),
        updated_at: new Date()
