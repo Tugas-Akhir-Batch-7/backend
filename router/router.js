@@ -38,6 +38,9 @@ router.post('/resetPassword', user.resetPassword)
 
 //guru
 router.post('/guru/addPertemuan', multerImg, guru.addPertemuan)
+router.get('/guru/daftarAbsensi', guru.daftarAbsensi)
+router.get('/guru/prosesAbsensi', guru.prosesAbsensi)
+router.get('/guru/daftarPertemuan', guru.daftarPertemuan)
 
 router.use('/user', userRoute)
 router.use('/auth/google', authGoogle)

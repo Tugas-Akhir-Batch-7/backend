@@ -14,7 +14,7 @@ module.exports = {
         references: {
           model: "batch",
         },
-        onDelete: 'set null',
+        onDelete: 'cascade',
         onUpdate: 'cascade'
       },
       id_guru: {
@@ -23,7 +23,7 @@ module.exports = {
         references: {
           model: "guru",
         },
-        onDelete: 'set null',
+        onDelete: 'cascade',
         onUpdate: 'cascade'
       },
       name: {

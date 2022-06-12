@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     valid_until: DataTypes.DATE
   }, {
     sequelize,
-    modelName: 'otp_registrasi',
+    modelName: 'Otp_registrasi',
     underscored: true,
     tableName: 'otp_registrasi'
   });

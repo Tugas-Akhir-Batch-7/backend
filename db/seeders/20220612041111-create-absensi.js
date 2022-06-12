@@ -12,7 +12,7 @@ module.exports = {
      * }], {});
      */
     await queryInterface.bulkInsert('absensi', [{
-      id_batch: '1',
+      id_pertemuan: '1',
       id_murid: '1',
       created_at: new Date(),
       updated_at: new Date()

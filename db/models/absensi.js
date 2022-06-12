@@ -12,11 +12,11 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       absensi.belongsTo(models.Murid, { targetKey: 'id', foreignKey: 'id_murid' }),
-      absensi.belongsTo(models.Batch, { targetKey: 'id', foreignKey: 'id_batch' })
+      absensi.belongsTo(models.Pertemuan, { targetKey: 'id', foreignKey: 'id_pertemuan' })
     }
   }
   absensi.init({
-    id_batch: DataTypes.INTEGER,
+    id_pertemuan: DataTypes.INTEGER,
     id_murid: DataTypes.INTEGER
   }, {
     sequelize,

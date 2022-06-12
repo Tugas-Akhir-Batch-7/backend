@@ -8,13 +8,13 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      id_batch: {
+      id_pertemuan: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: "batch",
+          model: "pertemuan",
         },
-        onDelete: 'set null',
+        onDelete: 'cascade',
         onUpdate: 'cascade'
       },
       id_murid: {
@@ -23,7 +23,7 @@ module.exports = {
         references: {
           model: "murid",
         },
-        onDelete: 'set null',
+        onDelete: 'cascade',
         onUpdate: 'cascade'
       },
       created_at: {
@@ -34,7 +34,12 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       }
-    });
+    },{indexes:[
+      {
+        unique:true,
+        fields:['id_pertemuan', 'id_murid']
+      }
+    ]});
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('absensis');

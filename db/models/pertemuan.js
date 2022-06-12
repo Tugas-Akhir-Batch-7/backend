@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
     upload: DataTypes.JSON
   }, {
     sequelize,
-    modelName: 'pertemuan',
+    modelName: 'Pertemuan',
     underscored: true,
     tableName: 'pertemuan',
   });

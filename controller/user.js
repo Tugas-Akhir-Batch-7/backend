@@ -15,7 +15,7 @@ const { generateToken, verify } = require("../helpers/jwt-auth")
 // const sequelize = db.index
 const user = db.User
 const murid = db.Murid
-const otpRegistrasi = db.otp_registrasi
+const otpRegistrasi = db.Otp_registrasi
 const totp = db.Otp
 
 const timeOtp = 150 //minute
