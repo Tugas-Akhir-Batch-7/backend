@@ -26,6 +26,7 @@ app.use(express.json());
 // app.use(routers);
 
 //body parse
+// app.use(bodyParser.raw())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extented: false }))
 

@@ -10,13 +10,13 @@ module.exports = {
      *   name: 'John Doe',
      *   isBetaMember: false
      * }], {});
-    */
-   await queryInterface.bulkUpdate('murid', {
-     id_batch: 1
-   },
-   {
-      id_user: 3
-   })
+     */
+    await queryInterface.bulkInsert('absensi', [{
+      id_pertemuan: '1',
+      id_murid: '1',
+      created_at: new Date(),
+      updated_at: new Date()
+    }], {});
   },
 
   async down (queryInterface, Sequelize) {

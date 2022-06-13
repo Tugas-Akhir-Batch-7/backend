@@ -11,11 +11,14 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      Batch.belongsTo(models.Guru, { targetKey: 'id', foreignKey: 'id_guru' })
     }
   }
   Batch.init({
+    id_guru:  DataTypes.INTEGER,
     name: DataTypes.STRING,
     start_date: DataTypes.DATE,
+    pay:  DataTypes.INTEGER,
   }, {
     sequelize,
     modelName: 'Batch',

@@ -11,12 +11,15 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-     await queryInterface.bulkInsert('admin', [
-      {
-        id_user: 1,
+    let data = []
+    for (let i = 1; i <= 10; i++) {
+      data.push({
+        id_user: 2,
         created_at: new Date(),
         updated_at: new Date()
-      }]);
+      })
+    }
+    await queryInterface.bulkInsert('admin',data);
   },
 
   async down (queryInterface, Sequelize) {

@@ -11,15 +11,16 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-     await queryInterface.bulkInsert('guru', [
-      {
-        id_user: 2,
-        // photo_ktp: 'https://avatars0.githubusercontent.com/u/43890987?s=460&v=4',
-        // address: 'Jl. Soto Sedeep',
-        // status: 'mendaftar',
+   let data = []
+    for (let i = 1; i <= 10; i++) {
+      data.push({
+        id: i,
+        id_user: i+10,
         created_at: new Date(),
         updated_at: new Date()
-      }]);
+      })
+    }
+     await queryInterface.bulkInsert('guru', data);
   },
 
   async down (queryInterface, Sequelize) {
