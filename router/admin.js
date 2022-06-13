@@ -11,6 +11,7 @@ router.get('/list-by-role', adminController.getAllByRole)
 
 router.get('/guru', adminController.getAllGuru)
 router.get('/murid', adminController.getAllMurid)
+router.post('/create-tagihan', adminController.createTagihan)
 
 
 module.exports = router;

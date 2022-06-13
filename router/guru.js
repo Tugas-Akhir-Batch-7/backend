@@ -6,6 +6,6 @@ router.get('/', (req, res) => {
     res.send('Guru')
 })
 
-router.get('list-by-batch', guruController.getAllByBatch)
+// router.get('list-by-batch', guruController.getAllByBatch)
 
 module.exports = router;

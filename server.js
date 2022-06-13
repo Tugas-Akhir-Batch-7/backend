@@ -2,6 +2,7 @@
 const express = require('express');
 const bodyParser = require('body-parser')
 var session = require('express-session')
+const morgan = require('morgan')
 
 //setup import
 const db = require('./db/models')
@@ -17,8 +18,11 @@ app.use(session({
     secret: 'sessoin',
     resave: true,
     saveUninitialized: false,
-  }));
+}));
 
+if (process.env.NODE_ENV === 'development') {
+    app.use(morgan('dev'));
+}
 
 // const routers = require('./routes'); // mengarah ke index.js di folder routes
 
