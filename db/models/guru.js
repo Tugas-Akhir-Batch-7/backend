@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Guru.belongsTo(models.User)
+      Guru.belongsTo(models.User, { targetKey: 'id', foreignKey: 'id_user' })
     }
   }
   Guru.init({
