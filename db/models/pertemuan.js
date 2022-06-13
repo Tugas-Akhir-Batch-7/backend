@@ -11,13 +11,11 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      pertemuan.belongsTo(models.Guru, { targetKey: 'id', foreignKey: 'id_guru' }),
       pertemuan.belongsTo(models.Batch, { targetKey: 'id', foreignKey: 'id_batch' })
     }
   }
   pertemuan.init({
     id_batch: DataTypes.INTEGER,
-    id_guru: DataTypes.INTEGER,
     name: DataTypes.STRING,
     date: DataTypes.DATE,
     upload: DataTypes.JSON

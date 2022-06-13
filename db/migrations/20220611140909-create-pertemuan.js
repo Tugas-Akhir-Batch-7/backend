@@ -17,15 +17,6 @@ module.exports = {
         onDelete: 'cascade',
         onUpdate: 'cascade'
       },
-      id_guru: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "guru",
-        },
-        onDelete: 'cascade',
-        onUpdate: 'cascade'
-      },
       name: {
         type: Sequelize.STRING
       },

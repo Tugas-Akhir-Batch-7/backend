@@ -8,6 +8,14 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      id_batch: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: 'batch',
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
+      },
       photo_ktp: {
         type: Sequelize.STRING,
         allowNull: false,
@@ -21,7 +29,7 @@ module.exports = {
         allowNull: false,
       },
       status: {
-        type: Sequelize.ENUM('belum mendaftar', 'mendaftar', 'terdaftar', 'alumni', 'keluar'),
+        type: Sequelize.ENUM('belum mendaftar', 'mendaftar', 'terdaftar', 'alumni', 'keluar', '123'),
         defaultValue: 'belum mendaftar'
       },
       id_user: {

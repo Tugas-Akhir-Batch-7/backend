@@ -11,18 +11,50 @@ module.exports = {
      *   isBetaMember: false
      * }], {});
     */
-     await queryInterface.bulkInsert('pertemuan', [{
-       id_batch:'1',
-       id_guru:'1',
-       name:'materi ujian',
-       upload:`{
+   
+    let data = []
+    for (let i = 1; i <= 10; i++) {
+      data.push({
+        id:i,
+        id_batch:i,
+        name:`materi ujian ke ${i}`,
+        upload:`{
         "file":["123.jpg", "file.docx"],
         "text":["materi ujian, silahkan dipejari di google"],
         "link":["google.com"]
-       }`,
-       created_at: new Date(),
-       updated_at: new Date()
-      }], {});
+        }`,
+        date: new Date(),
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      data.push({
+        id:i+10,
+        id_batch:i,
+        name:`materi ujian ke ${i+10}`,
+        upload:`{
+        "file":["123.jpg", "file.docx"],
+        "text":["materi ujian, silahkan dipejari di google"],
+        "link":["google.com"]
+        }`,
+        date: new Date(),
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      data.push({
+        id:i+20,
+        id_batch:i,
+        name:`materi ujian ke ${i+20}`,
+        upload:`{
+        "file":["123.jpg", "file.docx"],
+        "text":["materi ujian, silahkan dipejari di google"],
+        "link":["google.com"]
+        }`,
+        date: new Date(),
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+    }
+    await queryInterface.bulkInsert('pertemuan', data);
   },
 
   async down (queryInterface, Sequelize) {

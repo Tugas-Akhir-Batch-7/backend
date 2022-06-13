@@ -8,6 +8,14 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      id_guru: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: "guru",
+        },
+        onDelete: 'cascade',
+        onUpdate: 'cascade'
+      },
       name: {
         type: Sequelize.STRING,
         unique: true,
@@ -15,6 +23,10 @@ module.exports = {
       },
       start_date: {
         type: Sequelize.DATE,
+        allowNull: false
+      },
+      pay: {
+        type: Sequelize.INTEGER,
         allowNull: false
       },
       created_at: {
