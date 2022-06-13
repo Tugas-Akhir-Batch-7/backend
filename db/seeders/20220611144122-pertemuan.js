@@ -13,38 +13,22 @@ module.exports = {
     */
    
     let data = []
-    for (let i = 1; i <= 10; i++) {
-      data.push({
-        id:i,
-        id_batch:i,
-        name:`materi ujian ke ${i}`,
-        ket: `materi ini adalah untuk ujian ke ${i}`,
-        file:`[["123.jpg", null], ["file.docx", "materi tentang java script"]]`,
-        date: new Date(),
-        created_at: new Date(),
-        updated_at: new Date()
-      })
-      data.push({
-        id:i+10,
-        id_batch:i,
-        name:`materi ujian ke ${i+10}`,
-        ket: `materi ini adalah untuk ujian ke ${i+10}`,
-        file:`[["123.jpg", null], ["file.docx", "materi tentang java script"]]`,
-        date: new Date(),
-        created_at: new Date(),
-        updated_at: new Date()
-      })
-      data.push({
-        id:i+20,
-        id_batch:i,
-        name:`materi ujian ke ${i+20}`,
-        ket: `materi ini adalah untuk ujian ke ${i+20}`,
-        file:`[["123.jpg", null], ["file.docx", "materi tentang java script"]]`,
-        date: new Date(),
-        created_at: new Date(),
-        updated_at: new Date()
-      })
+    function buat(name){
+      for(let i = 1; i <= 15; i++){
+        data.push({
+          id_batch:i,
+          name:`materi ujian ke ${i}`,
+          ket: `${name} ${i}`,
+          file:`[["123.jpg", null], ["file.docx", "materi tentang java script"]]`,
+          date: new Date(),
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+      }
     }
+    buat('materi ini adalah untuk ujian ke')
+    buat('basic jacavascript')
+    buat('basic css')
     await queryInterface.bulkInsert('pertemuan', data);
   },
 

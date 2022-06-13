@@ -127,11 +127,10 @@ class User {
 
                 //memasukkan data ke tabel murid
                 await murid.create({photo_ktp: ktp.filename, address, birthday, birthday_date:new Date(), id_user:1000}, { transaction: t })
-
-                await t.commit()
             }else{
                 await user.create({name, email, password, role, photo:profile})
             }
+            await t.commit()
 
             //menghapus data otp jika sudah register
             await otpRegistrasi.destroy({where: {email}})
