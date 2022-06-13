@@ -1,26 +1,3 @@
-<<<<<<< HEAD
-const User = require('../db/models/').User
-const Murid = require('../db/models/').Murid
-const Guru = require('../db/models/').Guru
-
-const getAllByBatch = async (req, res, next) => {
-    try {
-        const batch = req.query.batch
-        const murids = await Murid.findAll({ where: { batch }, include: [User] })
-        res.status(200).json({
-            success: true,
-            message: 'success get all murid',
-            data: murids
-        })
-    }
-    catch (error) {
-        next(error)
-    }
-}
-module.exports = {
-    getAllByBatch
-}
-=======
 const ApiError = require('../helpers/api-error');
 const db = require('../db/models')
 const { sequelize } = require("../db/models");
@@ -137,4 +114,3 @@ class Guru{
     }
 }
 module.exports = Guru
->>>>>>> ebb1ae442ffcd5c360934884b50f11604d9f3b40
