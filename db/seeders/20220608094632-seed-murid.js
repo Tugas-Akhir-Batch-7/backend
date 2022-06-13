@@ -16,7 +16,7 @@ module.exports = {
       let x = 0
       let batch = 15
       function buat(status, ulang){
-        for(; i <= 120 && x+((ulang*batch)*2) >= i+(ulang*batch);){
+        for(; i <= 120 && x+(ulang*batch) > i;){
           for (let y = 1; y <= batch; y++) {
             data.push({
             id_user: i+15,
@@ -28,7 +28,7 @@ module.exports = {
             created_at: new Date(),
             updated_at: new Date()
             })
-            i++
+            i+=1
           }
         }
         x = i
