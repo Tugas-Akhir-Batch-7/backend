@@ -1,22 +1,39 @@
 // const jwb = require("jsonwebtoken")
 const bcrypt = require('bcrypt')
-const mv = require('mv')
 const {QueryTypes, Op} = require('sequelize')
-const validImg = require('../model/validate_image')
+var passport = require('passport'), OAuthStrategy = require('passport-oauth').OAuthStrategy;
 
+const validImg = require('../middlewares/validate_image')
 const db = require('../db/models')
-const {mail, mailOptions} = require('../model/mail');
 const { sequelize } = require("../db/models");
+const {mail, mailOptions} = require('../model/mail');
 const { checkout } = require("../router/router")
 const ApiError = require('../helpers/api-error');
 const { generateToken, verify } = require("../helpers/jwt-auth")
+
 //db
 // const sequelize = db.index
 const user = db.User
 const murid = db.Murid
 const otpRegistrasi = db.otp_registrasi
+const totp = db.Otp
 
-const timeOtp = 150
+const timeOtp = 150 //minute
+
+passport.use('provider', new OAuthStrategy({
+  requestTokenURL: 'https://oauth2.googleapis.com/token',
+  accessTokenURL: 'https://accounts.google.com/o/oauth2/auth',
+  userAuthorizationURL: 'https://www.googleapis.com/oauth2/v1/certs',
+  consumerKey: '519018642220-egf6gb0qpeg5g5djmup1i8et73ee1khs.apps.googleusercontent.com',
+  consumerSecret: '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',
+  callbackURL: 'http://localhost:3000/authGoogleCB'
+  },
+  function(token, tokenSecret, profile, done) {
+    done(err, user);
+    // User.findOrCreate(..., function(err, user) {
+    // });
+  }
+));
 
 const SU = {
     email: 'faishalsample07@gmail.com',
@@ -24,6 +41,9 @@ const SU = {
 }
 
 class User {
+    static async google(req, res, next){
+
+    }
     static async login(req, res, next) {
         try {
             const { email, password } = req.body;
@@ -62,7 +82,8 @@ class User {
             // res.status(400).send('terjadi error')
         }
     }
-    static async register(req, res) {
+    static async register(req, res, next) {
+        const t = await sequelize.transaction();
         try {
             //variabel
             const name = req.body.username
@@ -100,36 +121,14 @@ class User {
 
                 //validasi img
                 await validImg.valid(ktp, 'img-ktp')
-
+                
                 //memasukkan data ke tabel user
-                let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile})
+                let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, { transaction: t })
 
                 //memasukkan data ke tabel murid
-                await sequelize.query(`INSERT INTO "murid" 
-                    ("id","photo_ktp","address","birthday_date","created_at","updated_at","id_user")
-                    VALUES (DEFAULT,?,?,?,?,?,?)`,{
-                    replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(), hasilUser.id]
-                })
-                // const result = await sequelize.transaction(async(t)=>{
-                //     // const registrasi = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, {transaction: t})
-                //     //tabel user
-                //     const registrasi = await sequelize.query(`INSERT INTO "users" 
-                //         ("id","name","email","password","role","photo","email_verified_at","created_at","updated_at")
-                //         VALUES (DEFAULT,?,?,?,?,?,?,?,?) 
-                //         RETURNING "id"`,{
-                //         replacements: [name, email, password, role, profile, new Date().toISOString(), new Date().toISOString(), new Date().toISOString()],
-                //         type: QueryTypes.INSERT
-                //     }, {transaction: t})
-                //     //tabel murid
-                //     await registrasi.query(`INSERT INTO "murid" 
-                //         ("id","photo_ktp","address","birthday_daate","created_at","updated_at","id_user")
-                //         VALUES (DEFAULT,?,?,?,?,?,?)`,{
-                //         replacements: [ktp.filename, address, birthday, new Date().toISOString(), new Date().toISOString(),registrasi[0][0].id],
-                //         type: QueryTypes.INSERT
-                //     }, {transaction: t})
-                //     return registrasi
-                // })
-                // console.log(result)
+                await murid.create({photo_ktp: ktp.filename, address, birthday, birthday_date:new Date(), id_user:1000}, { transaction: t })
+
+                await t.commit()
             }else{
                 await user.create({name, email, password, role, photo:profile})
             }
@@ -139,11 +138,13 @@ class User {
 
             res.send('register berhasil')
         } catch (error) {
-            console.log(error)
-            res.status(400).json(['terjadi error', error])
+            await t.rollback()
+            next(error)
+            // console.log(error)
+            // res.status(400).json(['terjadi error', error])
         }
     }
-    static async createOtpRegister(req, res) {
+    static async createOtpRegister(req, res, next) {
         try {
             //variabel
             let emailOtp
@@ -210,11 +211,78 @@ class User {
             })
             res.send('behasil')
         } catch (error) {
+            next(error)
+            // console.log(error)
+            // res.status(400).json(['terjadi error', error])
+        }
+    }
+    static async createOtpReset(req, res, next){
+        try {
+            //otp
+            let otp = 0
+            while (otp < 100000 || otp > 999999) {
+                otp = Math.ceil(Math.random() * 1000000)
+            }
+            
+            //kirim data otp ke database
+            await sequelize.query(`INSERT INTO "otp" 
+                ("user_id", "otp", "valid_until", "updated_at", "created_at")
+                VALUES (?,?,?,?,?)
+                ON CONFLICT ("user_id")
+                DO UPDATE SET
+                    "otp" = EXCLUDED."otp",
+                    "valid_until" = EXCLUDED.valid_until,
+                    "updated_at" = EXCLUDED.updated_at;`,
+              {
+                replacements: [req.body.id, otp, new Date(new Date().getTime() + (1000*60* timeOtp)).toISOString(), new Date().toISOString(), new Date().toISOString()],
+                type: QueryTypes.UPSERT
+              }
+            )
+            
+            //kirim otp via email
+            mailOptions.to = req.body.email
+            mailOptions.text = `code otp\n${otp}`
+            mail.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                    console.log(err)
+                    throw 'error saat kirim otp via email'
+                }
+            })
+            res.send('berhasil')
+        } catch (error) {
+            // next()
             console.log(error)
             res.status(400).json(['terjadi error', error])
         }
     }
+    static async validResetOtp(req, res, next){
+        try {
+            //validasi otp
+            if(!(await totp.findOne({where:{user_id:req.body.id, otp: req.body.otp}}))) throw 'otp salah'
+            res.send('berhasil')
+        } catch (error) {
+            // next()
+            console.log(error)
+            res.status(400).json(['terjadi error', error])
+        }
+    }
+    static async resetPassword(req, res, next){
+        try {
+             //verifikasi lebih lanjut
+            if(!(await totp.findOne({where:{user_id:req.body.id, otp: req.body.otp}}))) throw 'otp atau id salah'
 
+            //mengubah password
+            await user.update({password: bcrypt.hashSync(req.body.password, 10)}, {where:{id:req.body.id}})
+            
+            //menghapus data otp jika sudah register
+            await totp.destroy({where: {user_id: req.body.id}})
+            res.send('berhasil')
+        } catch (error) {
+            // next()
+            console.log(error)
+            res.status(400).json(['terjadi error', error])
+        }
+    }
     static async profile(req, res, next) {
         try {
             // console.log(await user.findAll()
