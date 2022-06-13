@@ -18,11 +18,8 @@ module.exports = {
         id:i,
         id_batch:i,
         name:`materi ujian ke ${i}`,
-        upload:`{
-        "file":["123.jpg", "file.docx"],
-        "text":["materi ujian, silahkan dipejari di google"],
-        "link":["google.com"]
-        }`,
+        ket: `materi ini adalah untuk ujian ke ${i}`,
+        file:`[["123.jpg", null], ["file.docx", "materi tentang java script"]]`,
         date: new Date(),
         created_at: new Date(),
         updated_at: new Date()
@@ -31,11 +28,8 @@ module.exports = {
         id:i+10,
         id_batch:i,
         name:`materi ujian ke ${i+10}`,
-        upload:`{
-        "file":["123.jpg", "file.docx"],
-        "text":["materi ujian, silahkan dipejari di google"],
-        "link":["google.com"]
-        }`,
+        ket: `materi ini adalah untuk ujian ke ${i+10}`,
+        file:`[["123.jpg", null], ["file.docx", "materi tentang java script"]]`,
         date: new Date(),
         created_at: new Date(),
         updated_at: new Date()
@@ -44,11 +38,8 @@ module.exports = {
         id:i+20,
         id_batch:i,
         name:`materi ujian ke ${i+20}`,
-        upload:`{
-        "file":["123.jpg", "file.docx"],
-        "text":["materi ujian, silahkan dipejari di google"],
-        "link":["google.com"]
-        }`,
+        ket: `materi ini adalah untuk ujian ke ${i+20}`,
+        file:`[["123.jpg", null], ["file.docx", "materi tentang java script"]]`,
         date: new Date(),
         created_at: new Date(),
         updated_at: new Date()
