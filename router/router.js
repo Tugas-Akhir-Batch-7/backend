@@ -8,8 +8,8 @@ const admin = require('../controller/admin')
 const guru = require('../controller/guru')
 const murid = require('../controller/murid')
 
-// const userRoute = require('./user')
-// const adminRoute = require('./admin')
+const userRoute = require('./user')
+const adminRoute = require('./admin')
 // const guruRoute = require('./guru')
 // const muridRoute = require('./murid')
 
@@ -49,8 +49,8 @@ router.get('/guru/daftarPertemuan', guru.daftarPertemuan)
 //murid
 router.get('/murid/data', murid.data)
 
-// router.use('/user', userRoute)
-// router.use('/admin', adminRoute)
+router.use('/user', userRoute)
+router.use('/admin', adminRoute)
 // router.use('/guru', guruRoute)
 // router.use('/murid', muridRoute)
 

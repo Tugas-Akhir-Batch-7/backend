@@ -70,8 +70,8 @@ const getAllGuru = async (req, res, next) => {
 
 const createTagihan = async (req, res, next) => {
     try {
-        return res.send('create tagihan')
-        const {id_murid, dp, total_bill} = req.body
+        // return res.send('create tagihan')
+        const {id_murid} = req.body
         const murid = await Murid.findOne({where: {id: id_murid}})
         return 
         if(!murid) throw ApiError.badRequest('Murid not found')
