@@ -6,4 +6,5 @@ router.get('/', (req, res) => {
     res.send('Murid')
 })
 
+router.get('/get-piutang', authentication, authorization('murid'), murid.getPiutang)
 module.exports = router;
