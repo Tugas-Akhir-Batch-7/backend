@@ -12,9 +12,9 @@ module.exports = {
      * }], {});
     */
     let data = []
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 5; i++) {
       data.push({
-        id_user: 2,
+        id_user: i,
         created_at: new Date(),
         updated_at: new Date()
       })

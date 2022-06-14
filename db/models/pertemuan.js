@@ -17,8 +17,9 @@ module.exports = (sequelize, DataTypes) => {
   pertemuan.init({
     id_batch: DataTypes.INTEGER,
     name: DataTypes.STRING,
-    date: DataTypes.DATE,
-    upload: DataTypes.JSON
+    ket: DataTypes.STRING,
+    file: DataTypes.JSON,
+    date: DataTypes.DATE
   }, {
     sequelize,
     modelName: 'Pertemuan',

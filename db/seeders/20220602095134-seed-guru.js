@@ -14,8 +14,7 @@ module.exports = {
    let data = []
     for (let i = 1; i <= 10; i++) {
       data.push({
-        id: i,
-        id_user: i+10,
+        id_user: i+5,
         created_at: new Date(),
         updated_at: new Date()
       })

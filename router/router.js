@@ -8,10 +8,10 @@ const admin = require('../controller/admin')
 const guru = require('../controller/guru')
 const murid = require('../controller/murid')
 
-const userRoute = require('./user')
-const adminRoute = require('./admin')
-const guruRoute = require('./guru')
-const muridRoute = require('./murid')
+// const userRoute = require('./user')
+// const adminRoute = require('./admin')
+// const guruRoute = require('./guru')
+// const muridRoute = require('./murid')
 
 const authGoogle = require('./google')
 
@@ -49,10 +49,10 @@ router.get('/guru/daftarPertemuan', guru.daftarPertemuan)
 //murid
 router.get('/murid/data', murid.data)
 
-router.use('/user', userRoute)
-router.use('/admin', adminRoute)
-router.use('/guru', guruRoute)
-router.use('/murid', muridRoute)
+// router.use('/user', userRoute)
+// router.use('/admin', adminRoute)
+// router.use('/guru', guruRoute)
+// router.use('/murid', muridRoute)
 
 
 router.use('/auth/google', authGoogle)

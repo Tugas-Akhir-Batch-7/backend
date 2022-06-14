@@ -15,6 +15,8 @@ const { generateToken, verify } = require("../helpers/jwt-auth")
 // const sequelize = db.index
 const user = db.User
 const murid = db.Murid
+const admin = db.Admin
+const guru = db.Guru
 const otpRegistrasi = db.Otp_registrasi
 const totp = db.Otp
 
@@ -114,6 +116,7 @@ class User {
             if (!(role == otp.role)) throw 'role berbeda'
 
             //kirim data register ke database
+            let resUser
             if(role == 'murid'){
                 const address = req.body.address
                 const birthday = req.body.birthday
@@ -123,15 +126,18 @@ class User {
                 await validFile.validImg(ktp, 'img-ktp')
                 
                 //memasukkan data ke tabel user
-                let hasilUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, { transaction: t })
+                resUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo:profile}, { transaction: t })
 
                 //memasukkan data ke tabel murid
-                await murid.create({photo_ktp: ktp.filename, address, birthday, birthday_date:new Date(), id_user:1000}, { transaction: t })
-
-                await t.commit()
-            }else{
-                await user.create({name, email, password, role, photo:profile})
+                await murid.create({photo_ktp: ktp.filename, address, birthday, birthday_date:new Date()}, { transaction: t })
+            }else if(role=='admin' ||role=='guru'){
+                resUser = await user.create({name, email, password, role, photo:profile}, { transaction: t })
+                role == 'admin' ? 
+                    resUser = await admin.create({id_user:resUser.id}, { transaction: t }):
+                    resUser = await guru.create({id_user:resUser.id}, { transaction: t })
             }
+
+            await t.commit()
 
             //menghapus data otp jika sudah register
             await otpRegistrasi.destroy({where: {email}})
@@ -139,9 +145,9 @@ class User {
             res.send('register berhasil')
         } catch (error) {
             await t.rollback()
-            next(error)
-            // console.log(error)
-            // res.status(400).json(['terjadi error', error])
+            // next(error)
+            console.log(error)
+            res.status(400).json(['terjadi error', error])
         }
     }
     static async createOtpRegister(req, res, next) {
@@ -224,6 +230,9 @@ class User {
                 otp = Math.ceil(Math.random() * 1000000)
             }
             
+            //cek id dan email
+            if(!await user.findOne({where:{id:req.body.id, email:req.body.email}})) throw 'data tidak sinkron'
+
             //kirim data otp ke database
             await sequelize.query(`INSERT INTO "otp" 
                 ("user_id", "otp", "valid_until", "updated_at", "created_at")
