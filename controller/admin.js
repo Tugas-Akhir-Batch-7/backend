@@ -6,6 +6,8 @@ const Guru = require('../db/models/').Guru
 const Tagihan = require('../db/models/').Tagihan
 const Pembayaran = require('../db/models/').Pembayaran
 
+const ApiError = require('../helpers/api-error')
+
 
 
 const getAllByRole = async (req, res, next) => {
@@ -81,16 +83,30 @@ const createTagihan = async (req, res, next) => {
     const t = await sequelize.transaction()
     try {
         // return res.send('create tagihan')
-        const { id_murid } = req.body
+        const { id_murid, total_bill, dp} = req.body
+        if(!id_murid || !total_bill || !dp) {
+            throw ApiError.badRequest('id_murid, total_bill, dp is required')
+        }
+
         let murid = await Murid.findOne({ where: { id: id_murid } })
 
         if (!murid) throw ApiError.badRequest('Murid not found')
 
+        let tagihan_check = await Tagihan.findOne({ 
+            where: { 
+                id_murid, 
+                is_lunas: false,
+            } 
+        })
+        if(tagihan_check) {
+            throw ApiError.badRequest(`User dengan id_murid ${id_murid} sedang memiliki tagihan aktif`)
+        }
+
         murid = murid.toJSON()
         const tagihan = await Tagihan.create({
             id_murid: murid.id,
-            total_bill: 100000,
-            dp: 50000,
+            total_bill: total_bill,
+            dp: dp,
             is_lunas: false,
         }, { transaction: t })
         const tagihanJSON = tagihan.toJSON()
@@ -116,6 +132,7 @@ const createTagihan = async (req, res, next) => {
         next(error)
     }
 }
+
 
 module.exports = {
     getAllByRole,
