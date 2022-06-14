@@ -94,7 +94,7 @@ class User {
             const role = req.body.role
             const inOtp = req.body.otp
             let profile
-
+            
             //cek
             if (!(name && password && email && role && inOtp)) throw 'masukkan semua data'
             //image

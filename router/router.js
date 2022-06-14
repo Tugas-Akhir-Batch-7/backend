@@ -29,7 +29,7 @@ const storage = multer.diskStorage({
       cb(null, new Date().getTime() + '-' +file.originalname)
     }
 })
-const multerImg = multer({ storage: storage }).fields([{name: 'profile'}, {name: 'ktp'}, {name: 'file'}])
+const multerImg = multer({ storage: storage }).fields([{name: 'profile', maxCount: 1}, {name: 'ktp', maxCount: 1}, {name: 'file', maxCount: 10}])
 
 
 //user
@@ -45,6 +45,7 @@ router.post('/guru/addPertemuan', multerImg, guru.addPertemuan)
 router.get('/guru/daftarAbsensi', guru.daftarAbsensi)
 router.post('/guru/prosesAbsensi', guru.prosesAbsensi)
 router.get('/guru/daftarPertemuan', guru.daftarPertemuan)
+router.get('/guru/daftarJadwalPertemuan', guru.daftarJadwalPertemuan)
 
 //murid
 router.get('/murid/data', murid.data)

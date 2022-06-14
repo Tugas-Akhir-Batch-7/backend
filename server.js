@@ -32,7 +32,7 @@ app.use(express.json());
 //body parse
 // app.use(bodyParser.raw())
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extented: false }))
+app.use(bodyParser.urlencoded({ extented: true }))
 
 app.use(router)
 

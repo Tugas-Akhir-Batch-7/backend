@@ -12,10 +12,12 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       pertemuan.belongsTo(models.Batch, { targetKey: 'id', foreignKey: 'id_batch' })
+      pertemuan.belongsTo(models.Guru, { targetKey: 'id', foreignKey: 'id_guru' })
     }
   }
   pertemuan.init({
     id_batch: DataTypes.INTEGER,
+    id_guru: DataTypes.INTEGER,
     name: DataTypes.STRING,
     ket: DataTypes.STRING,
     file: DataTypes.JSON,

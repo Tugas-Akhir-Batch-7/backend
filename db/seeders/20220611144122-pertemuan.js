@@ -17,6 +17,7 @@ module.exports = {
       for(let i = 1; i <= 15; i++){
         data.push({
           id_batch:i,
+          id_guru:Math.ceil(Math.random() * 10),
           name:`materi ujian ke ${i}`,
           ket: `${name} ${i}`,
           file:`[["123.jpg", null], ["file.docx", "materi tentang java script"]]`,
@@ -38,6 +39,8 @@ module.exports = {
      *
      * Example:
      * await queryInterface.bulkDelete('People', null, {});
+     * npx sequelize-cli db:migrate
+     * npx sequelize-cli db:seed:all
      */
   }
 };
