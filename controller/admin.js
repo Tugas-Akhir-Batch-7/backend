@@ -83,8 +83,8 @@ const createTagihan = async (req, res, next) => {
     const t = await sequelize.transaction()
     try {
         // return res.send('create tagihan')
-        const { id_murid, total_bill, dp} = req.body
-        if(!id_murid || !total_bill || !dp) {
+        const { id_murid, total_bill, dp } = req.body
+        if (!id_murid || !total_bill || !dp) {
             throw ApiError.badRequest('id_murid, total_bill, dp is required')
         }
 
@@ -92,32 +92,37 @@ const createTagihan = async (req, res, next) => {
 
         if (!murid) throw ApiError.badRequest('Murid not found')
 
-        let tagihan_check = await Tagihan.findOne({ 
-            where: { 
-                id_murid, 
+        let tagihan_check = await Tagihan.findOne({
+            where: {
+                id_murid,
                 is_lunas: false,
-            } 
+            }
         })
-        if(tagihan_check) {
+        if (tagihan_check) {
             throw ApiError.badRequest(`User dengan id_murid ${id_murid} sedang memiliki tagihan aktif`)
         }
-
         murid = murid.toJSON()
-        const tagihan = await Tagihan.create({
-            id_murid: murid.id,
-            total_bill: total_bill,
-            dp: dp,
-            is_lunas: false,
-        }, { transaction: t })
-        const tagihanJSON = tagihan.toJSON()
-        // console.log(tagihan.toJSON())
-        if(tagihan.dp > 0) {
-            const pembayaran = await Pembayaran.create({
-                id_tagihan: tagihanJSON.id,
-                amount: tagihanJSON.dp,
-                date: new Date(),
+        if (dp < 0) throw ApiError.badRequest('DP tidak boleh negatif')
+        if (dp > total_bill) throw ApiError.badRequest('DP tidak boleh lebih besar dari total_bill')
+        
+        let tagihan
+        if (dp === total_bill) {
+            tagihan = await Tagihan.create({
+                id_murid: murid.id,
+                total_bill: total_bill,
+                dp: dp,
+                is_lunas: true,
+            }, { transaction: t })
+        } else {
+            tagihan = await Tagihan.create({
+                id_murid: murid.id,
+                total_bill: total_bill,
+                dp: dp,
+                is_lunas: false,
             }, { transaction: t })
         }
+
+        const tagihanJSON = tagihan.toJSON()
         await t.commit()
         // console.log(tagihan)
         return res.status(201).json({
