@@ -145,5 +145,38 @@ class Guru{
             res.status(400).json(['terjadi error', error])
         }
     }
+
+    static async createUjian(req, res, next){
+        try {
+            //validasi{
+
+        } catch (error) {
+            next(error)
+        }
+    }
+    static async updateUjian(req, res, next){
+        try {
+            //validasi{
+
+        } catch (error) {
+            next(error)
+        }
+    }
+    static async deleteUjian(req, res, next){
+        try {
+            //validasi{
+
+        } catch (error) {
+            next(error)
+        }
+    }
+    static async getUjian(req, res, next){
+        try {
+            //validasi{
+
+        } catch (error) {
+            next(error)
+        }
+    }
 }
 module.exports = Guru
