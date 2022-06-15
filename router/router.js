@@ -46,6 +46,10 @@ router.get('/guru/daftarAbsensi', guru.daftarAbsensi)
 router.post('/guru/prosesAbsensi', guru.prosesAbsensi)
 router.get('/guru/daftarPertemuan', guru.daftarPertemuan)
 router.get('/guru/daftarJadwalPertemuan', guru.daftarJadwalPertemuan)
+router.post('/guru/addUjian', guru.addUjian)
+router.get('/guru/getUjian', guru.getUjian)
+router.get('/guru/getPesertaUjian', guru.getPesertaUjian)
+router.post('/guru/addScoreUjian', guru.addScoreUjian)
 
 //murid
 router.get('/murid/data', murid.data)
