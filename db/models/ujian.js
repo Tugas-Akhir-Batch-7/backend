@@ -13,6 +13,8 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
       Ujian.belongsTo(models.Batch, { targetKey: 'id', foreignKey: 'id_batch' })
       Ujian.belongsTo(models.Guru, { targetKey: 'id', foreignKey: 'id_guru' })
+
+      Ujian.hasMany(models.UjianSubmission, { targetKey: 'id', foreignKey: 'id_ujian' })
     }
   }
   Ujian.init({

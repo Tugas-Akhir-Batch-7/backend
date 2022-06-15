@@ -12,6 +12,8 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       Batch.belongsTo(models.Guru, { targetKey: 'id', foreignKey: 'id_guru' })
+      
+      Batch.hasMany(models.Ujian, { targetKey: 'id', foreignKey: 'id_batch' })
     }
   }
   Batch.init({
