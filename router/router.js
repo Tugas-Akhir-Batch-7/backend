@@ -53,6 +53,7 @@ router.post('/guru/addScoreUjian', guru.addScoreUjian)
 
 //murid
 router.get('/murid/data', murid.data)
+router.post('/murid/addUjian', murid.addUjian)
 
 router.use('/user', userRoute)
 router.use('/admin', adminRoute)

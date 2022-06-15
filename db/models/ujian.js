@@ -19,7 +19,8 @@ module.exports = (sequelize, DataTypes) => {
     id_guru: DataTypes.INTEGER,
     id_batch: DataTypes.INTEGER,
     name: DataTypes.STRING,
-    date: DataTypes.DATE
+    date: DataTypes.DATE,
+    time: DataTypes.TIME
   }, {
     sequelize,
     modelName: 'Ujian',

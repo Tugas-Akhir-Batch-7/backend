@@ -160,13 +160,15 @@ class Guru{
 
             //menyimpan data
             let date = req.body.date || new Date()
+            let time = req.body.time || '02:00:00'
 
             //kirim data pertemuan ke database
             let result = await ujian.create({
                 id_guru: req.body.pengawas,
                 id_batch: req.body.batch,
                 name: req.body.name,
-                date
+                date,
+                time
             })
 
             res.json({status:'berhasil',idUjian:result.id})
@@ -200,7 +202,7 @@ class Guru{
 
             //ambil data daftar ujian
             let data = await ujian.findAll({
-                attributes:['id','id_batch', 'name', 'date'],
+                attributes:['id','id_batch', 'name', 'date', 'time'],
                 where:{id_batch:req.body.batch}
             })
 

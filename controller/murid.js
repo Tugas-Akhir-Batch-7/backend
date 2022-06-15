@@ -8,6 +8,7 @@ const guru = db.Guru
 const murid = db.Murid
 const pertemuan = db.Pertemuan
 const absensi = db.Absensi
+const ujianSubmit = db.UjianSubmission
 const Tagihan = db.Tagihan
 const Pembayaran = db.Pembayaran
 
@@ -39,6 +40,30 @@ class Murid {
                 }
             }
             res.json(['berhasil', dataAbsen[0]])
+        } catch (error) {
+            console.log(error)
+            res.status(400).json(['terjadi error', error])
+        }
+    }
+    static async addUjian(req, res, next) {
+        try {
+            //validasi
+            if (!(req.body.id && req.body.password && await Murid.cekMurid(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
+            if(!(req.body.ujian && req.body.link)) throw ApiError.badRequest("data tidak lengkap")
+            if((await sequelize.query(`
+                SELECT * 
+                FROM ujian INNER JOIN murid ON ujian.id_batch = murid.id_batch AND ujian.id = '${req.body.ujian}' AND murid.id = '${req.body.id}' AND murid.status = 'terdaftar' AND ujian.date + ujian.time >= now()
+            `))[0].length == 0) throw ApiError.badRequest("data tidak valid")
+
+            //proses kirim ujian
+            ujianSubmit.create({
+                id_ujian: req.body.ujian,
+                id_murid: req.body.id,
+                submit_date: new Date(),
+                submit_link: req.body.link
+            })
+
+            res.json('berhasil')
         } catch (error) {
             console.log(error)
             res.status(400).json(['terjadi error', error])
