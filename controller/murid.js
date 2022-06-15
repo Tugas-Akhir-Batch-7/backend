@@ -54,50 +54,63 @@ class Murid {
 
     static async getUjian(req, res, next) {
         try {
-            // console.log(req.user)
             const { id } = req.user
             console.log(id)
-
             // ambil ujian berdsarakan id batch murid
-            let muridGet = await murid.findOne({
-                where: {
-                    id_user: id
-                },
-                attributes: [],
-                // includeIgnoreAttributes: false,
-                include: [{
-                    model: Batch,
-                    attributes: ['id'],
-                    include: [{
-                        model: Ujian,
-                        attributes: ['name', 'date'],
-                        include: [{
-                            model: Guru,
-                            attributes: ['id'],
-                            include: [{
-                                model: User,
-                                attributes: ['name']
-                            }]
-                        },
-                        {
-                            model: UjianSubmission,
-                            where : {
-                                id_murid : id
-                            }
-                        }
-                    ]
-                    }]
-                }]
+            // let muridGet = await murid.findOne({
+            //     where: {
+            //         id_user: id
+            //     },
+            //     attributes: [],
+            //     // includeIgnoreAttributes: false,
+            //     include: [{
+            //         model: Batch,
+            //         attributes: ['id'],
+            //         include: [{
+            //             model: Ujian,
+            //             attributes: ['name', 'date'],
+            //             include: [{
+            //                 model: Guru,
+            //                 attributes: ['id'],
+            //                 include: [{
+            //                     model: User,
+            //                     attributes: ['name']
+            //                 }]
+            //             },
+            //             {
+            //                 model: UjianSubmission,
+            //                 where : {
+            //                     id_murid : id
+            //                 }
+            //             }
+            //         ]
+            //         }]
+            //     }]
+            // })
+            let ujianSubmissionDetailsGet = await sequelize.query(`
+            SELECT uj.name as ujian_name, us.name as guru_name, uj_sub.score as nilai, uj_sub.submit_date, uj_sub.score_rank 
+            FROM ( select id_ujian,
+                        id_murid,
+                        submit_date,
+                        score,
+                        DENSE_RANK() OVER(PARTITION BY id_ujian ORDER 								BY score DESC) score_rank
+            FROM ujian_submission ORDER BY id, score_rank) uj_sub
+            JOIN ujian AS uj ON uj.id = uj_sub.id_ujian
+            JOIN guru as g ON g.id = uj.id_guru
+            JOIN users as us ON us.id = g.id_user
+            WHERE id_murid = :id_murid;`,
+            { replacements: { id_murid: id } }
+            )
+            // console.log(muridGet.toJSON())
+            let result = ujianSubmissionDetailsGet[0]
+            console.log(result)
+            res.status(200).json({
+                success: true,
+                message: 'data detail ujian submission berhasil diambil',
+                data: result
             })
-
-            console.log(muridGet.toJSON())
-            res.json(['berhasil', muridGet.toJSON()])
-
             // console.log(muridGet.toJSON().Batch.Ujians[0].Guru.User)
             // console.log(muridGet.toJSON().Batch.Ujians[0])
-
-            // return res.send(id)
-
         } catch (error) {
             next(error)
         }
