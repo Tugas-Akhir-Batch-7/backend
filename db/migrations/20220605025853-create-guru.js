@@ -24,7 +24,11 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       }
-    });
+    },{indexes:[
+      {
+        fields:['id_user']
+      }
+    ]});
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('guru');

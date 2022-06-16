@@ -1,33 +1,42 @@
 'use strict';
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('batch', {
+    await queryInterface.createTable('tugas_submission', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      id_guru: {
+      id_tugas: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: "guru",
+          model: 'tugas',
         },
         onDelete: 'cascade',
         onUpdate: 'cascade'
       },
-      name: {
-        type: Sequelize.STRING,
-        unique: true,
-        allowNull: false
-      },
-      start_date: {
-        type: Sequelize.DATE,
-        allowNull: false
-      },
-      pay: {
+      id_murid: {
         type: Sequelize.INTEGER,
-        allowNull: false
+        allowNull: false,
+        references: {
+          model: 'murid',
+        },
+        onDelete: 'cascade',
+        onUpdate: 'cascade'
+      },
+      score: {
+        type: Sequelize.INTEGER
+      },
+      submit_date: {
+        allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue:Sequelize.NOW
+      },
+      submit_link: {
+        allowNull: false,
+        type: Sequelize.STRING
       },
       created_at: {
         allowNull: false,
@@ -39,11 +48,11 @@ module.exports = {
       }
     },{indexes:[
       {
-        fields:['id_guru']
+        fields:['id_tugas', 'id_murid']
       }
     ]});
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('batch');
+    await queryInterface.dropTable('tugas_submission');
   }
 };

@@ -8,7 +8,7 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      user_id: {
+      id_user: {
         type: Sequelize.INTEGER,
         allowNull: false,
         unique: true,
@@ -32,7 +32,11 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       }
-    });
+    },{indexes:[
+      {
+        fields:['id_user']
+      }
+    ]});
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('otp');

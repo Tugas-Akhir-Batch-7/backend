@@ -52,7 +52,7 @@ router.get('/guru/getPesertaUjian', guru.getPesertaUjian)
 router.post('/guru/addScoreUjian', guru.addScoreUjian)
 
 //murid
-router.get('/murid/data', murid.data)
+router.get('/murid/getPertemuan', murid.getPertemuan)
 router.post('/murid/addUjian', murid.addUjian)
 
 router.use('/user', userRoute)

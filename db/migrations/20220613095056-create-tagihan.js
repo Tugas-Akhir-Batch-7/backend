@@ -37,7 +37,11 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       }
-    });
+    },{indexes:[
+      {
+        fields:['id_murid']
+      }
+    ]});
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('tagihan');

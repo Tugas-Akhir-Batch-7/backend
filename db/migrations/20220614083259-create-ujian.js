@@ -34,11 +34,13 @@ module.exports = {
       date: {
         type: Sequelize.DATE,
         allowNull: false,
+        defaultValue:Sequelize.NOW
 
       },
       time: {
         type: Sequelize.TIME,
         allowNull: false,
+        defaultValue: '02:00:00'
 
       },
       created_at: {
@@ -49,7 +51,11 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       }
-    });
+    },{indexes:[
+      {
+        fields:['id_guru', 'id_batch']
+      }
+    ]});
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('ujian');

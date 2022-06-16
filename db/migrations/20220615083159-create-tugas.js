@@ -1,33 +1,31 @@
 'use strict';
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('batch', {
+    await queryInterface.createTable('tugas', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      id_guru: {
+      id_pertemuan: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: {
-          model: "guru",
+          model: 'pertemuan',
         },
         onDelete: 'cascade',
         onUpdate: 'cascade'
       },
       name: {
         type: Sequelize.STRING,
-        unique: true,
-        allowNull: false
+        allowNull: false,
+
       },
-      start_date: {
-        type: Sequelize.DATE,
-        allowNull: false
-      },
-      pay: {
-        type: Sequelize.INTEGER,
-        allowNull: false
+      description: {
+        type: Sequelize.STRING,
+        allowNull: false,
+
       },
       created_at: {
         allowNull: false,
@@ -39,11 +37,11 @@ module.exports = {
       }
     },{indexes:[
       {
-        fields:['id_guru']
+        fields:['id_pertemuan']
       }
     ]});
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('batch');
+    await queryInterface.dropTable('tugas');
   }
 };

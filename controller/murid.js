@@ -29,21 +29,31 @@ class Murid {
         return cek[1].rowCount == true
     }
     // ambil materi pertemuan
-    static async data(req, res, next) {
+    static async getPertemuan(req, res, next) {
         try {
             //validasi
             if (!(req.body.id && req.body.password && await Murid.cekMurid(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
 
             //ambil data absensi
             let dataAbsen = await sequelize.query(`
-                SELECT pertemuan.name AS materi, (pertemuan.upload), pertemuan.date, absensi.id_pertemuan as absen, murid.id, pertemuan.id
-                FROM murid INNER JOIN absensi ON absensi.id_murid = murid.id AND murid.id = ${req.body.id} RIGHT JOIN pertemuan ON absensi.id_pertemuan = pertemuan.id
+                SELECT 
+                    pertemuan.name AS materi,
+                    pertemuan.ket, 
+                    pertemuan.file, 
+                    pertemuan.date, 
+                    absensi.id_pertemuan as absen, 
+                    murid.id, 
+                    pertemuan.id
+                FROM 
+                    murid INNER JOIN pertemuan ON murid.id_batch = pertemuan.id_batch AND murid.id = ${req.body.id}
+                    LEFT JOIN absensi ON absensi.id_pertemuan = pertemuan.id
+                ORDER BY pertemuan.date DESC
             `)
 
-            //mengubah file
+            // mengubah file
             for (let i = 0; i < dataAbsen[0].length; i++) {
                 if (dataAbsen[0][i].absen == null) {
-                    dataAbsen[0][i].upload.file = null
+                    dataAbsen[0][i].file = null
                 }
             }
             res.json(['berhasil', dataAbsen[0]])

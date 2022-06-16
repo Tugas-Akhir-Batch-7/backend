@@ -8,6 +8,14 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      id_user: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: "users",
+          onDelete: 'cascade',
+          onUpdate: 'cascade'
+        },
+      },
       id_batch: {
         type: Sequelize.INTEGER,
         references: {
@@ -32,14 +40,6 @@ module.exports = {
         type: Sequelize.ENUM('belum mendaftar', 'mendaftar', 'terdaftar', 'alumni', 'keluar', '123'),
         defaultValue: 'belum mendaftar'
       },
-      id_user: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: "users",
-        },
-        onDelete: 'cascade',
-        onUpdate: 'cascade'
-      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE
@@ -48,7 +48,11 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       }
-    });
+    },{indexes:[
+      {
+        fields:['id_user', 'id_batch']
+      }
+    ]});
   },
   async down(queryInterface, Sequelize) {
     await queryInterface.dropTable('murid');
