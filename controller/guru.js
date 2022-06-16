@@ -9,6 +9,8 @@ const murid = db.Murid
 const batch = db.Batch
 const pertemuan = db.Pertemuan
 const absensi = db.Absensi
+const tugas = db.Tugas
+const tugasSub = db.TugasSubmission
 const ujian = db.Ujian
 const ujianSub = db.UjianSubmission
 
@@ -21,6 +23,7 @@ class Guru{
         return cek[1].rowCount == true
     }
     static async addPertemuan(req, res, next){
+        const t = await sequelize.transaction();
         try {
             //validasi
             if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
@@ -38,7 +41,8 @@ class Guru{
                 file.push([el.filename, cat[i]])
             }
 
-            //kirim data pertemuan ke database
+            //kirim data ke database
+            //pertemuan
             let result = await pertemuan.create({
                 id_guru: req.body.idPengajar,
                 id_batch: req.body.batch,
@@ -46,10 +50,20 @@ class Guru{
                 ket,
                 date,
                 file,
-            })
-            
+            }, { transaction: t })
+            //tugas
+            if(req.body.tugasName && req.body.tugasDescription){
+                await tugas.create({
+                    id_pertemuan: result.id,
+                    name: req.body.tugasName,
+                    description: req.body.tugasDescription
+                }, {transaction: t})
+            }
+
+            await t.commit()
             res.json({status:'berhasil',idPertemuan:result.id})
         } catch (error) {
+            await t.rollback()
             console.log(error)
             res.status(400).json(['terjadi error', error])
         }
@@ -70,8 +84,9 @@ class Guru{
                 guru.id AS "id guru",
                 batch.id AS "id batch",
                 pertemuan.id AS "id pertemuan"
-            FROM guru INNER JOIN batch ON guru.id = batch.id_guru AND guru.id = '${req.body.id}' 
-            INNER JOIN pertemuan ON batch.id = pertemuan.id_batch
+            FROM 
+                guru INNER JOIN batch ON guru.id = batch.id_guru AND guru.id = '${req.body.id}' 
+                INNER JOIN pertemuan ON batch.id = pertemuan.id_batch
         `)
             
             res.json(data[0])
@@ -96,7 +111,8 @@ class Guru{
                 pertemuan.id_guru AS "id guru",
                 batch.id AS "id batch",
                 pertemuan.id AS "id pertemuan"
-            FROM batch INNER JOIN pertemuan ON batch.id = pertemuan.id_batch AND pertemuan.id_guru = '${req.body.id}'
+            FROM 
+                batch INNER JOIN pertemuan ON batch.id = pertemuan.id_batch AND pertemuan.id_guru = '${req.body.id}'
         `)
             
             res.json(data[0])
@@ -106,6 +122,111 @@ class Guru{
         }
     }
 
+    static async daftarTugas(req, res, next){
+        try {
+            //validasi
+            if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
+            // if(!(req.body.batch)) throw ApiError.badRequest("data tidak lengkap")
+
+            //ambil data
+            let data = await sequelize.query(`
+            (SELECT 
+                pertemuan.name AS "name pertemuan",
+                pertemuan.ket AS "keterangan",
+                pertemuan.id AS "id pertemuan",
+                pertemuan.id_batch as "id batch",
+                pertemuan.id_guru as "id pengawas",
+                batch.id_guru as "id pemilik",
+                tugas.created_at as "date"
+            FROM
+                guru INNER JOIN batch ON guru.id = batch.id_guru AND guru.id = '1' 
+                INNER JOIN pertemuan ON batch.id = pertemuan.id_batch
+                INNER JOIN tugas ON tugas.id_pertemuan = pertemuan.id)
+            UNION 	
+            (SELECT 
+                pertemuan.name,
+                pertemuan.ket,
+                pertemuan.id,
+                pertemuan.id_batch,
+                pertemuan.id_guru,
+                batch.id_guru,
+                tugas.created_at
+            FROM
+                pertemuan INNER JOIN tugas ON pertemuan.id = tugas.id_pertemuan AND pertemuan.id_guru = '1' 
+                INNER JOIN batch ON pertemuan.id_batch = batch.id)
+            ORDER BY date DESC
+        `)
+            
+            res.json(data[0])
+        } catch (error) {
+            console.log(error)
+            res.status(400).json(['terjadi error', error])
+        }
+    }
+    static async daftarTugasMurid(req, res, next){
+        try {
+            //validasi
+            if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
+            if(!(req.body.tugas)) throw ApiError.badRequest("data tidak lengkap")
+
+            //ambil data
+            let data = await sequelize.query(`
+            SELECT 
+                tugas_submission.id,
+                tugas_submission.id_murid,
+                tugas_submission.score,
+                tugas_submission.submit_date,
+                tugas_submission.submit_link
+            FROM
+                pertemuan INNER JOIN tugas ON pertemuan.id = tugas.id_pertemuan AND tugas.id = ${req.body.tugas}
+                INNER JOIN tugas_submission ON tugas.id = tugas_submission.id_tugas
+            ORDER BY submit_date DESC
+            `)
+            
+            res.json(data[0])
+        } catch (error) {
+            console.log(error)
+            res.status(400).json(['terjadi error', error])
+        }
+    }
+    static async addScoreTugas(req, res, next){
+        try {
+            //validasi
+            if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
+            if(!(req.body.tugas && req.body.score)) throw ApiError.badRequest("data tidak lengkap")
+            if(!(
+                //pemilik batch
+                (await sequelize.query(`
+                    SELECT * 
+                    FROM pertemuan INNER JOIN tugas ON pertemuan.id = tugas.id_pertemuan and tugas.id = ${req.body.tugas}
+                    INNER JOIN batch on batch.id = pertemuan.id_batch and batch.id_guru =  ${req.body.id}
+                `))[1].rowCount || 
+                //pengajar pertemuan
+                (await sequelize.query(`
+                    SELECT * 
+                    FROM pertemuan INNER JOIN tugas ON pertemuan.id = tugas.id_pertemuan AND pertemuan.id_guru = ${req.body.id} and tugas.id = ${req.body.tugas}
+                `))[1].rowCount
+            )) throw 'tidak memliliki hak untuk memberikan nilai pada tugas di batch ini'
+            
+            //proses
+            //score[i][0] = id tugas submission
+            //score[i][1] = nilai
+            let score = req.body.score
+            for (let i = 0; i < score.length; i++) {
+                if(score[i][0] && score[i][1]){
+                    //kirim data pertemuan ke database
+                    await tugasSub.update({score:score[i][1]},{
+                        where:{id_tugas:req.body.tugas, id:score[i][0]}
+                    })
+                }
+            }
+
+            res.json({status:'berhasil'})
+        } catch (error) {
+            console.log(error)
+            res.status(400).json(['terjadi error', error])
+        }
+    }
     static async daftarAbsensi(req, res, next){
         try {
             //validasi
@@ -244,9 +365,16 @@ class Guru{
             //validasi
             if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
             if(!(req.body.ujian && req.body.score)) throw ApiError.badRequest("data tidak lengkap")
-            if(!await batch.findOne({where:{id_guru:req.body.id, id:req.body.batch}})) throw 'tidak memliliki hak untuk memberikan nilai pada ujian di batch ini'
+            if(!//pemilik batch
+            (await sequelize.query(`
+                SELECT * 
+                FROM pertemuan INNER JOIN tugas ON pertemuan.id = tugas.id_pertemuan and tugas.id = ${req.body.tugas}
+                INNER JOIN batch on batch.id = pertemuan.id_batch and batch.id_guru =  ${req.body.id}
+            `))[1].rowCount) throw 'tidak memliliki hak untuk memberikan nilai pada ujian di batch ini'
             
             //proses
+            //score[i][0] = id tugas submission
+            //score[i][1] = nilai
             let score = req.body.score
             for (let i = 0; i < score.length; i++) {
                 if(score[i][0] && score[i][1]){

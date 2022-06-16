@@ -235,9 +235,9 @@ class User {
 
             //kirim data otp ke database
             await sequelize.query(`INSERT INTO "otp" 
-                ("user_id", "otp", "valid_until", "updated_at", "created_at")
+                ("id_user", "otp", "valid_until", "updated_at", "created_at")
                 VALUES (?,?,?,?,?)
-                ON CONFLICT ("user_id")
+                ON CONFLICT ("id_user")
                 DO UPDATE SET
                     "otp" = EXCLUDED."otp",
                     "valid_until" = EXCLUDED.valid_until,
@@ -267,7 +267,7 @@ class User {
     static async validResetOtp(req, res, next) {
         try {
             //validasi otp
-            if (!(await totp.findOne({ where: { user_id: req.body.id, otp: req.body.otp } }))) throw 'otp salah'
+            if (!(await totp.findOne({ where: { id_user: req.body.id, otp: req.body.otp } }))) throw 'otp salah'
             res.send('berhasil')
         } catch (error) {
             // next()
@@ -278,13 +278,13 @@ class User {
     static async resetPassword(req, res, next) {
         try {
             //verifikasi lebih lanjut
-            if (!(await totp.findOne({ where: { user_id: req.body.id, otp: req.body.otp } }))) throw 'otp atau id salah'
+            if (!(await totp.findOne({ where: { id_user: req.body.id, otp: req.body.otp } }))) throw 'otp atau id salah'
 
             //mengubah password
             await user.update({ password: bcrypt.hashSync(req.body.password, 10) }, { where: { id: req.body.id } })
 
             //menghapus data otp jika sudah register
-            await totp.destroy({ where: { user_id: req.body.id } })
+            await totp.destroy({ where: { id_user: req.body.id } })
             res.send('berhasil')
         } catch (error) {
             // next()
