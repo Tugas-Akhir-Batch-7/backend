@@ -216,7 +216,10 @@ class Murid {
             return res.status(200).json({
                 message: 'berhasil',
                 data: {
-                    piutang: hutangPembayaran,
+                    biayaTotal: tagihan_aktif.total_bill,
+                    dp: tagihan_aktif.dp,
+                    kekuranganBayar: hutangPembayaran,
+                    // tenggatWaktu perlu didiskusikan
                 }
             })
             let jumlahPiutang = await sequelize.query(``)
