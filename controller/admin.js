@@ -78,7 +78,25 @@ const getAllGuru = async (req, res, next) => {
         next(error)
     }
 }
+const detailTagihan = async (req, res, next) => {
+    try {
+        const { id } = req.params
+        const tagihan = await Tagihan.findOne({
+            where: {
+                id: id
+            }
+        })
+        if (!tagihan) throw ApiError.badRequest('Tagihan not found')
 
+        res.status(200).json({
+            success: true,
+            message: 'success get tagihan',
+            data: tagihan
+        })
+    } catch (error) {
+        next(error)
+    }
+}
 const createTagihan = async (req, res, next) => {
     const t = await sequelize.transaction()
     try {
@@ -250,6 +268,7 @@ module.exports = {
     getAllByRole,
     getAllMurid,
     getAllGuru,
+    detailTagihan,
     createTagihan,
     updateTagihan,
     createPembayaran,
