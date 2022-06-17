@@ -8,7 +8,9 @@ const murid = model.Murid
 
 const { authentication, authorization } = require('../middlewares/auth');
 
-
+const userMiddleware = [
+    authentication, authorization('admin', 'guru', 'murid')
+]
 // router.get()
 router.get('/murid', async (req, res) => {
     const muridGet = await murid.findAll()
@@ -16,6 +18,7 @@ router.get('/murid', async (req, res) => {
     res.json(muridGet)
 })  
 router.get('/profile', authentication, authorization('admin', 'murid', 'guru'), user.profile);
+router.put('/profile', userMiddleware, user.updateProfile)
 router.get('/profile/:id', authentication, authorization('admin', 'murid', 'guru'), user.profile)
 
 
