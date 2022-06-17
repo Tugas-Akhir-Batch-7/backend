@@ -16,6 +16,7 @@ const Ujian = db.Ujian
 const Batch = db.Batch
 const User = db.User
 const UjianSubmission = db.UjianSubmission
+const tugasSubmit = db.TugasSubmission
 
 
 
@@ -62,6 +63,32 @@ class Murid {
             res.status(400).json(['terjadi error', error])
         }
     }
+    static async addTugas(req, res, next) {
+        try {
+            //validasi
+            if (!(req.body.id && req.body.password && await Murid.cekMurid(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
+            if(!(req.body.tugas && req.body.link)) throw ApiError.badRequest("data tidak lengkap")
+            if((await sequelize.query(`
+                SELECT * 
+                FROM 
+                    tugas inner join pertemuan on tugas.id_pertemuan = pertemuan.id and tugas.id = ${req.body.tugas}
+                    inner join murid on murid.id_batch = pertemuan.id_batch and murid.id = ${req.body.id} and murid.status = 'terdaftar'
+            `))[1].rowCount == 0) throw ApiError.badRequest("data tidak valid")
+
+            //proses kirim ujian
+            tugasSubmit.create({
+                id_tugas: req.body.tugas,
+                id_murid: req.body.id,
+                submit_date: new Date(),
+                submit_link: req.body.link
+            })
+
+            res.json('berhasil')
+        } catch (error) {
+            console.log(error)
+            res.status(400).json(['terjadi error', error])
+        }
+    }
     static async addUjian(req, res, next) {
         try {
             //validasi
@@ -70,7 +97,7 @@ class Murid {
             if((await sequelize.query(`
                 SELECT * 
                 FROM ujian INNER JOIN murid ON ujian.id_batch = murid.id_batch AND ujian.id = '${req.body.ujian}' AND murid.id = '${req.body.id}' AND murid.status = 'terdaftar' AND ujian.date + ujian.time >= now()
-            `))[0].length == 0) throw ApiError.badRequest("data tidak valid")
+            `))[1].rowCount == 0) throw ApiError.badRequest("data tidak valid")
 
             //proses kirim ujian
             ujianSubmit.create({

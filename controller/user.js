@@ -92,44 +92,36 @@ class User {
             const password = bcrypt.hashSync(req.body.password, 10)
             const email = req.body.email
             const role = req.body.role
-            const inOtp = req.body.otp
-            let profile
+            let profile = 'default.png'
             
-            //cek
-            if (!(name && password && email && role && inOtp)) throw 'masukkan semua data'
-            //image
-            if (req.files.profile) { //jika memasukkan photo profile
-                profile = req.files.profile[0]
-                await validFile.validImg(profile, 'img-profile')
-                profile = profile.filename
-            } else {
-                profile = 'default.png'
-            }
-
+            //validasi
+            if (!(name && password && email && role)) throw 'masukkan semua data'
             //cek otp
-            let otp = await otpRegistrasi.findOne({ where: { otp: inOtp } })
+            let otp = await otpRegistrasi.findOne({ where: { otp: req.body.otp , email, role} })
             if (!otp) throw 'otp tidak valid'
 
-            //cek data
-            if (new Date() > otp.valid_until) throw 'waktu otp limit'
-            if (!(email == otp.email)) throw 'data tidak lengkap'
-            if (!(role == otp.role)) throw 'role berbeda'
+            //image process profile
+            req.files.profile.length ? 
+                profile = await validFile.validProfile(req.files.profile[0]) :
+                false
 
             //kirim data register ke database
             let resUser
             if (role == 'murid') {
                 const address = req.body.address
                 const birthday = req.body.birthday
-                const ktp = req.files.ktp[0]
+                let ktp
 
-                //validasi img
-                await validFile.validImg(ktp, 'img-ktp')
+                //image process ktp
+                if(req.files.ktp.length) ktp = await validFile.validKtp(req.files.ktp[0])
+                else throw 'masukkan ktp'
+                console.log(ktp)
 
                 //memasukkan data ke tabel user
                 resUser = await user.create({ name, email, password, role, email_verified_at: new Date(), photo: profile }, { transaction: t })
 
                 //memasukkan data ke tabel murid
-                await murid.create({ photo_ktp: ktp.filename, address, birthday, birthday_date: new Date() }, { transaction: t })
+                await murid.create({ photo_ktp: ktp, address, birthday, birthday_date: new Date() }, { transaction: t })
             } else if (role == 'admin' || role == 'guru') {
                 resUser = await user.create({ name, email, password, role, photo: profile }, { transaction: t })
                 role == 'admin' ?
@@ -235,9 +227,9 @@ class User {
 
             //kirim data otp ke database
             await sequelize.query(`INSERT INTO "otp" 
-                ("user_id", "otp", "valid_until", "updated_at", "created_at")
+                ("id_user", "otp", "valid_until", "updated_at", "created_at")
                 VALUES (?,?,?,?,?)
-                ON CONFLICT ("user_id")
+                ON CONFLICT ("id_user")
                 DO UPDATE SET
                     "otp" = EXCLUDED."otp",
                     "valid_until" = EXCLUDED.valid_until,
@@ -267,7 +259,7 @@ class User {
     static async validResetOtp(req, res, next) {
         try {
             //validasi otp
-            if (!(await totp.findOne({ where: { user_id: req.body.id, otp: req.body.otp } }))) throw 'otp salah'
+            if (!(await totp.findOne({ where: { id_user: req.body.id, otp: req.body.otp } }))) throw 'otp salah'
             res.send('berhasil')
         } catch (error) {
             // next()
@@ -278,13 +270,13 @@ class User {
     static async resetPassword(req, res, next) {
         try {
             //verifikasi lebih lanjut
-            if (!(await totp.findOne({ where: { user_id: req.body.id, otp: req.body.otp } }))) throw 'otp atau id salah'
+            if (!(await totp.findOne({ where: { id_user: req.body.id, otp: req.body.otp } }))) throw 'otp atau id salah'
 
             //mengubah password
             await user.update({ password: bcrypt.hashSync(req.body.password, 10) }, { where: { id: req.body.id } })
 
             //menghapus data otp jika sudah register
-            await totp.destroy({ where: { user_id: req.body.id } })
+            await totp.destroy({ where: { id_user: req.body.id } })
             res.send('berhasil')
         } catch (error) {
             // next()
