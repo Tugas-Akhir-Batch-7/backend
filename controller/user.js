@@ -109,6 +109,7 @@ class User {
             let resUser
             if (role == 'murid') {
                 const address = req.body.address
+                const contact = req.body.contact
                 const birthday = req.body.birthday
                 let ktp
 
@@ -121,7 +122,7 @@ class User {
                 resUser = await user.create({ name, email, password, role, email_verified_at: new Date(), photo: profile }, { transaction: t })
 
                 //memasukkan data ke tabel murid
-                await murid.create({ photo_ktp: ktp, address, birthday, birthday_date: new Date() }, { transaction: t })
+                await murid.create({ id_user:resUser.id, photo_ktp: ktp, address, contact, birthday, birthday_date: new Date() }, { transaction: t })
             } else if (role == 'admin' || role == 'guru') {
                 resUser = await user.create({ name, email, password, role, photo: profile }, { transaction: t })
                 role == 'admin' ?
@@ -132,7 +133,7 @@ class User {
             await t.commit()
 
             //menghapus data otp jika sudah register
-            await otpRegistrasi.destroy({ where: { email } })
+            // await otpRegistrasi.destroy({ where: { email } })
 
             res.send('register berhasil')
         } catch (error) {

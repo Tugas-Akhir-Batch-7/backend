@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     id_batch: DataTypes.INTEGER,
     photo_ktp: DataTypes.STRING,
     address: DataTypes.STRING,
+    contact: DataTypes.STRING,
     birthday_date : DataTypes.DATE,
     status: DataTypes.ENUM('belum mendaftar', 'mendaftar', 'terdaftar', 'alumni', 'keluar')
   }, {
