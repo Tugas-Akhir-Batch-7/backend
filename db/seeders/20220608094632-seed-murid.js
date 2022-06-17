@@ -18,11 +18,16 @@ module.exports = {
       function buat(status, ulang){
         for(; i <= 120 && x+(ulang*batch) > i;){
           for (let y = 1; y <= batch; y++) {
+            let contact
+            do {
+              contact = Math.round(Math.random()*10000000000)
+            } while (contact<1000000000);
             data.push({
             id_user: i+15,
             id_batch: y,
             photo_ktp: 'https://avatars0.githubusercontent.com/u/43890987?s=460&v=4',
             address: `Jl. Raya no:${i}`,
+            contact,
             birthday_date: new Date(),
             status,
             created_at: new Date(),
