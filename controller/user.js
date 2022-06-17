@@ -93,15 +93,15 @@ class User {
             const email = req.body.email
             const role = req.body.role
             let profile = 'default.png'
-            
+
             //validasi
             if (!(name && password && email && role)) throw 'masukkan semua data'
             //cek otp
-            let otp = await otpRegistrasi.findOne({ where: { otp: req.body.otp , email, role} })
+            let otp = await otpRegistrasi.findOne({ where: { otp: req.body.otp, email, role } })
             if (!otp) throw 'otp tidak valid'
 
             //image process profile
-            req.files.profile.length ? 
+            req.files.profile.length ?
                 profile = await validFile.validProfile(req.files.profile[0]) :
                 false
 
@@ -113,7 +113,7 @@ class User {
                 let ktp
 
                 //image process ktp
-                if(req.files.ktp.length) ktp = await validFile.validKtp(req.files.ktp[0])
+                if (req.files.ktp.length) ktp = await validFile.validKtp(req.files.ktp[0])
                 else throw 'masukkan ktp'
                 console.log(ktp)
 
@@ -309,12 +309,12 @@ class User {
                 profile = await admin.findOne({
                     where: { id_user: id },
                 })
-            } else if(userGet.role == "guru"){
+            } else if (userGet.role == "guru") {
                 profile = await guru.findOne({
                     where: { id_user: id },
                 })
             }
-            
+
             profile = profile.toJSON()
             userGet = userGet.toJSON()
             userGet.profile = profile
@@ -334,5 +334,80 @@ class User {
 
         }
     }
+
+    static async updateProfile(req, res, next) {
+        const t = await sequelize.transaction()
+        try {
+            let id
+            if (req.params.id) {
+                id = req.params.id
+            } else {
+                id = req.user.id
+            }
+
+            let userGet = await user.findByPk(id)
+            if (!userGet) throw ApiError.badRequest("User tidak ditemukan")
+            console.log(userGet.role)
+
+            let userUpdated = await user.update({
+                name: req.body.name,
+                // photo:
+            }, { transaction: t, where: { id: id }, returning: true })
+            // console.log(req.body.address)
+            userUpdated = userUpdated[1][0].toJSON()
+            userUpdated.password = undefined
+            console.log(userUpdated)
+            
+            let profileUpdated
+            if (userGet.role === 'murid') {
+                console.log("sini")
+                profileUpdated = await murid.update({
+                    address: req.body.address,
+                    birthday_date: req.body.birthday_date,
+                },
+                    {
+                        returning: true,
+                        transaction: t,
+                        where: { id_user: id },
+                    })
+                // userUpdated.profile = profileUpdated[1][0]
+                userUpdated.profile = profileUpdated[1][0].toJSON()
+                // profile = await murid.findOne({
+                //     where: { id_user: id },
+                //     attributes: ['address', 'birthday_date', 'status', 'id_batch'],
+                // })
+            }
+            // console.log(profileUpdated[1][0].toJSON())
+            // console.log(userUpdated)
+            //  else if (userGet.role == "admin") {
+            //     profile = await admin.findOne({
+            //         where: { id_user: id },
+            //     })
+            // } else if (userGet.role == "guru") {
+            //     profile = await guru.findOne({
+            //         where: { id_user: id },
+            //     })
+            // }
+
+            // profile = profile.toJSON()
+            // userGet = userGet.toJSON()
+            // userGet.profile = profile
+            // userGet.password = undefined
+            
+            // console.log(userUpdated)
+            t.commit()
+            return res.status(200).json({
+                success: true,
+                message: 'data user berhasil diambil',
+                data: userUpdated
+            })
+            // console.log("All users:", JSON.stringify(users, null, 2));
+            // res.send(req.params.id)
+        } catch (error) {
+            t.rollback()
+            next(error)
+        }
+    }
+
 }
 module.exports = User
