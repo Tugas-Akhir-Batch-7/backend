@@ -33,7 +33,7 @@ class validate {
                 {clobber: false}, 
                 (err) => { if (err) reject('gagal menyimpan gambar')}
             )
-            resolve('berhasil')
+            resolve(file.filename)
         })
     }
 }

@@ -1,40 +1,28 @@
 'use strict';
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('pertemuan', {
+    await queryInterface.createTable('pertemuan_file', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      id_batch: {
+      id_pertemuan: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: "batch",
+          model: "pertemuan",
         },
         onDelete: 'cascade',
         onUpdate: 'cascade'
       },
-      id_guru: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: "guru",
-        },
-        onDelete: 'cascade',
-        onUpdate: 'cascade'
-      },
-      name: {
-        type: Sequelize.STRING
+      file: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       ket: {
         type: Sequelize.STRING
-      },
-      date: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.NOW
       },
       created_at: {
         allowNull: false,
@@ -46,11 +34,11 @@ module.exports = {
       }
     },{indexes:[
       {
-        fields:['id_batch', 'id_guru']
+        fields:['id_pertemuan']
       }
     ]});
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('pertemuan');
+    await queryInterface.dropTable('pertemuan_file');
   }
 };

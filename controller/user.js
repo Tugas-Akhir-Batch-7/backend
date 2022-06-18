@@ -62,6 +62,7 @@ class User {
                     userGet.password = undefined;
                     const payload = {
                         id: userGet.id,
+                        [`id_${userGet.role}`] :(await sequelize.query(`SELECT id FROM ${userGet.role} WHERE id_user = ${userGet.id}`))[0][0].id,
                         name: userGet.name,
                         email: userGet.email,
                         role: userGet.role,
@@ -105,7 +106,7 @@ class User {
                 profile = await validFile.validProfile(req.files.profile[0]) :
                 profile = 'default.png'
 
-            //kirim data register ke database
+            
             if (role == 'murid') {
                 //variabel
                 const {address, contact, birthday} = req.body
@@ -115,10 +116,10 @@ class User {
                 //image process ktp
                 if(!req.files.ktp) throw 'masukkan ktp'
                 let ktp = await validFile.validKtp(req.files.ktp[0])
-                //memasukkan data ke tabel user
+                //kirim user
                 resUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo: profile }, { transaction: t })
 
-                //memasukkan data ke tabel murid
+                //kirim murid
                 resRole = await murid.create({ 
                     id_user: resUser.id, 
                     photo_ktp: ktp, 
@@ -133,7 +134,7 @@ class User {
                     resRole = await guru.create({ id_user: resUser.id }, { transaction: t })
             }
             
-            //menghapus data otp jika sudah register
+            //hapus otp
             await otpRegistrasi.destroy({where: {email: resUser.email}})
             
             await t.commit()

@@ -1,6 +1,6 @@
 const ApiError = require('../helpers/api-error');
 const db = require('../db/models')
-const { sequelize } = require("../db/models");
+const { sequelize, Op } = require("../db/models");
 const validFile = require('../middlewares/validate_file')
 const {verify } = require("../helpers/jwt-auth")
 
@@ -9,6 +9,7 @@ const guru = db.Guru
 const murid = db.Murid
 const batch = db.Batch
 const pertemuan = db.Pertemuan
+const pertemuanFile = db.PertemuanFile
 const absensi = db.Absensi
 const tugas = db.Tugas
 const tugasSub = db.TugasSubmission
@@ -75,7 +76,6 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
-            if (token.role != 'guru') throw 'anda tidak bisa membuat batch'
 
             //ambil input
             let data = {}
@@ -85,7 +85,7 @@ class Guru{
             startDate ? data.start_date = startDate : false
             pay ? data.pay = pay : false
 
-            //create batch
+            //update batch
             const result = await batch.update(data, {where: {id, id_guru: token.id_guru}})
 
             res.json({
@@ -105,7 +105,6 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
-            if (token.role != 'guru') throw 'anda tidak bisa membuat batch'
 
             //ambil input
             const id = req.params.id
@@ -128,103 +127,287 @@ class Guru{
         const t = await sequelize.transaction();
         try {
             //validasi
-            if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
-            if(!(req.body.name && req.body.batch && req.body.idPengajar)) throw ApiError.badRequest("data tidak lengkap")
-            if(!await batch.findOne({where:{id_guru:req.body.id, id:req.body.batch}})) throw 'tidak memliliki hak untuk membuat pertemuan di batch ini'
-
-            //menyimpan file
-            let ket = req.body.ket || null
-            let date = req.body.date || new Date()
-            let cat = req.body.catatanFile || []
-            let file = []
-            for (let i = 0; i < req.files.file.length; i++) {
-                const el =  req.files.file[i]
-                await validFile.validImg(el, 'upload')
-                file.push([el.filename, cat[i]])
-            }
-
-            //kirim data ke database
+            if(!(req.body.name && req.params.id)) throw "name atau id batch tidak di inputkan"
+            
+            //ambil token
+            const token = verify(req.headers.token)
+            if(!await batch.findOne({where:{id_guru:token.id_guru, id: req.params.id}})) throw 'bukan batch anda'
+            
             //pertemuan
-            let result = await pertemuan.create({
-                id_guru: req.body.idPengajar,
-                id_batch: req.body.batch,
-                name: req.body.name,
-                ket,
-                date,
-                file,
-            }, { transaction: t })
-            //tugas
-            if(req.body.tugasName && req.body.tugasDescription){
-                await tugas.create({
-                    id_pertemuan: result.id,
-                    name: req.body.tugasName,
-                    description: req.body.tugasDescription
-                }, {transaction: t})
+            //ambil input pertemuan
+            const id_batch = req.params.id
+            const id_guru = req.body.pengajar || token.id_guru
+            const ket = req.body.ket || null
+            const name = req.body.name
+            const date = req.body.date || new Date()
+            //kirim pertemuan
+            let resultPertemuan = await pertemuan.create({id_batch, id_guru, name, ket, date}, { transaction: t })
+            
+            //file
+            //cek file
+            if(req.files.file){
+                //ambil file
+                let dataFile = []
+                if(!req.body.ketFile) req.body.ketFile = []
+                //proses
+                for (let i = 0; i < req.files.file.length; i++) {
+                    dataFile.push({
+                        id_pertemuan: resultPertemuan.id,
+                        file: await validFile.validFile(req.files.file[i], 'upload'),
+                        ket: req.body.ketFile[i] || null
+                    })
+                    
+                }
+                //kirim
+                var resultFile = await pertemuanFile.bulkCreate(dataFile, { transaction: t })
             }
+            
+            //tugas
+            //ambil input tugas
+            let {tugasName, tugasDescription} = req.body
+            //cek tugas
+            if(tugasName && tugasDescription){
+                let dataTugas = []
+                //ubah ke array
+                if(!Array.isArray(tugasName)) tugasName = [tugasName]
+                if(!Array.isArray(tugasDescription)) tugasDescription = [tugasDescription]
+                //proses
+                for (let i = 0; i < tugasName.length; i++) {
+                    dataTugas.push({
+                        id_pertemuan: resultPertemuan.id,
+                        name: tugasName[i],
+                        description: tugasDescription[i] || tugasName[i]
+                    })
+                }
+                //kirim
+                var resultTugas = await tugas.bulkCreate(dataTugas, { transaction: t })
+            }
+            // throw [resultPertemuan||null, resultFile||null, resultTugas||null]
 
             await t.commit()
-            res.json({status:'berhasil',idPertemuan:result.id})
+            
+            res.json({
+                success: true,
+                message: 'berhasil membuat pertemuan',
+                data: {
+                    resultPertemuan : resultPertemuan||null,
+                    resultFile : resultFile||null,
+                    resultTugas : resultTugas||null,
+                }
+            })
         } catch (error) {
             await t.rollback()
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
-    static async daftarPertemuan(req, res, next){
+    static async listPertemuan(req, res, next){
         try {
-            //validasi
-            if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
+            //ambil token
+            const token = verify(req.headers.token)
 
             //ambil data
             let data = await sequelize.query(`
-            SELECT 
-                batch.name AS "name batch",
-                pertemuan.name AS "name pertemuan",
-                pertemuan.ket AS "keterangan",
-                pertemuan.file AS "file",
-                pertemuan.date AS "date",
-                guru.id AS "id guru",
-                batch.id AS "id batch",
-                pertemuan.id AS "id pertemuan"
-            FROM 
-                guru INNER JOIN batch ON guru.id = batch.id_guru AND guru.id = '${req.body.id}' 
-                INNER JOIN pertemuan ON batch.id = pertemuan.id_batch
-        `)
+                SELECT 
+                    batch.name AS "name_batch",
+                    pertemuan.name AS "name_pertemuan",
+                    pertemuan.ket AS "keterangan",
+                    pertemuan.date AS "date",
+                    guru.id AS "id guru",
+                    batch.id AS "id batch",
+                    pertemuan.id AS "id_pertemuan"
+                FROM 
+                    guru INNER JOIN batch ON guru.id = batch.id_guru AND guru.id = '${token.id_guru}' 
+                    INNER JOIN pertemuan ON batch.id = pertemuan.id_batch
+            `)
             
-            res.json(data[0])
+            res.json({
+                success: true,
+                message: 'menampilkan daftar petemuan',
+                data: data[0]
+            })
         } catch (error) {
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
-    static async daftarJadwalPertemuan(req, res, next){
+    static async listJadwalPertemuan(req, res, next){
         try {
-            //validasi
-            if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
+            //ambil token
+            const token = verify(req.headers.token)
 
             //ambil data
             let data = await sequelize.query(`
-            SELECT 
-                batch.name AS "name batch",
-                pertemuan.name AS "name pertemuan",
-                pertemuan.ket AS "keterangan",
-                pertemuan.file AS "file",
-                pertemuan.date AS "date",
-                pertemuan.id_guru AS "id guru",
-                batch.id AS "id batch",
-                pertemuan.id AS "id pertemuan"
-            FROM 
-                batch INNER JOIN pertemuan ON batch.id = pertemuan.id_batch AND pertemuan.id_guru = '${req.body.id}'
-        `)
+                SELECT 
+                    batch.name AS "name batch",
+                    pertemuan.name AS "name pertemuan",
+                    pertemuan.ket AS "keterangan",
+                    pertemuan.date AS "date",
+                    pertemuan.id_guru AS "id guru",
+                    batch.id AS "id batch",
+                    pertemuan.id AS "id pertemuan"
+                FROM 
+                    batch INNER JOIN pertemuan ON batch.id = pertemuan.id_batch AND pertemuan.id_guru = '${token.id_guru}'
+            `)
             
-            res.json(data[0])
+            res.json({
+                success: true,
+                message: 'menampilkan jadval petemuan',
+                data: data[0]
+            })
         } catch (error) {
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async detailPertemuan(req, res, next){
+        try {
+            //validasi
+            let id = req.params.id
+            if(!id) throw 'masukkan id pertemuan'
+
+            //ambil token
+            const token = verify(req.headers.token)
+
+            //ambil data
+            //pertemuan
+            let dataPertemuan = (await sequelize.query(`
+                SELECT 
+                    batch.name AS "name_batch",
+                    pertemuan.name AS "name_pertemuan",
+                    pertemuan.ket AS "keterangan",
+                    pertemuan.date AS "date",
+                    pertemuan.id_guru AS "id_pengajar",
+                    (SELECT name FROM guru INNER JOIN users ON guru.id_user = users.id AND guru.id = pertemuan.id_guru) AS name_pengajar,
+                    batch.id_guru AS "id_guru",
+                    (SELECT name FROM guru INNER JOIN users ON guru.id_user = users.id AND guru.id = batch.id_guru) AS name_guru,
+                    batch.id AS "id_batch",
+                    pertemuan.id AS "id_pertemuan"
+                FROM 
+                    guru INNER JOIN batch ON guru.id = batch.id_guru 
+                    INNER JOIN pertemuan ON batch.id = pertemuan.id_batch  AND pertemuan.id = '${id}'
+            `))[0][0]
+            //file pertemuan
+            let dataFile = (await sequelize.query(`
+                SELECT 
+                    pertemuan_file.id,
+                    pertemuan_file.file,
+                    pertemuan_file.ket
+                FROM
+                    pertemuan INNER JOIN pertemuan_file ON pertemuan.id = pertemuan_file.id_pertemuan AND id_pertemuan = ${dataPertemuan.id_pertemuan}
+            `))[0]
+            //tugas pertemuan
+            let dataTugas = (await sequelize.query(`
+                SELECT 
+                    tugas.id,
+                    tugas.name,
+                    tugas.description
+                FROM
+                    pertemuan INNER JOIN tugas ON pertemuan.id = tugas.id_pertemuan AND id_pertemuan = ${dataPertemuan.id_pertemuan}
+            `))[0] || null
+            let dataSubmitTugas = {}
+            let dataAbsen = {}
+            if(dataPertemuan.date < new Date()){
+                //tugas submit
+                for (let i = 0; i < dataTugas.length; i++) {
+                    dataSubmitTugas[dataTugas[i].id] = (await sequelize.query(`
+                        SELECT 
+                            tugas_submission.id,
+                            tugas_submission.id_tugas,
+                            tugas_submission.id_murid,
+                            tugas_submission.score,
+                            tugas_submission.submit_date,
+                            tugas_submission.submit_link
+                        FROM
+                            tugas INNER JOIN tugas_submission ON tugas.id = tugas_submission.id_tugas AND id_tugas = ${dataTugas[i].id}
+                    `))[0] || null
+                }
+                //absensi
+                dataAbsen = (await sequelize.query(`
+                    SELECT 
+                        murid.id AS id_murid,
+                        murid.id_user,
+                        murid.contact,
+                        murid.status,
+                        users.name,
+                        users.email,
+                        absensi.id AS id_absen
+                    FROM
+                        pertemuan INNER JOIN murid ON pertemuan.id_batch = murid.id_batch AND pertemuan.id = ${dataPertemuan.id_pertemuan} AND murid.status = 'terdaftar'
+                        INNER JOIN users ON users.id = murid.id_user
+                        LEFT JOIN absensi ON absensi.id_murid = murid.id
+                `))[0] || null
+            }
+            
+            res.json({
+                success: true,
+                message: 'menampilkan daftar petemuan',
+                data: {dataPertemuan, dataFile, dataTugas, dataSubmitTugas, dataAbsen}
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async updatePertemuan(req, res, next){
+        try {
+            //validasi
+            if(!req.params.id) throw 'masukkan id pertemuan'
+
+            //ambil token
+            const token = verify(req.headers.token)
+
+            //ambil input
+            let data = {}
+            const id = req.params.id
+            const {name, ket, pengajar, date} = req.body
+            name ? data.name = name : false
+            ket ? data.ket = ket : false
+            pengajar ? data.pengajar = pengajar : false
+            date ? data.date = date : false
+
+            //update pertemuan
+            const result = await pertemuan.update(data, {where: {id, [Op.or]:[
+                {id_guru: token.id_guru}
+
+            ]}})
+
+            res.json({
+                success: true,
+                message: 'berhasil mengubah pertemuan',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async deletePertemuan(req, res, next){
+        try {
+            //validasi
+            if(!req.params.id) throw 'masukkan id pertemuan'
+
+            //ambil token
+            const token = verify(req.headers.token)
+
+            //ambil input
+            const id = req.params.id
+
+            //delete pertemuan
+            const result = await pertemuan.destroy({where:{id, id_guru:token.id_guru}})
+
+            res.json({
+                success: true,
+                message: 'berhasil menghapus pertemuan',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
 
-    static async daftarTugas(req, res, next){
+    static async listTugas(req, res, next){
         try {
             //validasi
             if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
@@ -265,7 +448,7 @@ class Guru{
             res.status(400).json(['terjadi error', error])
         }
     }
-    static async daftarTugasMurid(req, res, next){
+    static async listTugasMurid(req, res, next){
         try {
             //validasi
             if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
@@ -329,7 +512,7 @@ class Guru{
             res.status(400).json(['terjadi error', error])
         }
     }
-    static async daftarAbsensi(req, res, next){
+    static async listAbsensi(req, res, next){
         try {
             //validasi
             if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")

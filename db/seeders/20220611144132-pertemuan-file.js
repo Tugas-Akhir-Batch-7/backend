@@ -16,11 +16,9 @@ module.exports = {
     function buat(name){
       for(let i = 1; i <= 15; i++){
         data.push({
-          id_batch:i,
-          id_guru:Math.ceil(Math.random() * 10),
-          name:`materi ujian ke ${i}`,
+          id_pertemuan:Math.ceil(Math.random() * 10),
+          file:`file${i}.docx`,
           ket: `${name} ${i}`,
-          date: new Date(),
           created_at: new Date(),
           updated_at: new Date()
         })
@@ -29,7 +27,7 @@ module.exports = {
     buat('materi ini adalah untuk ujian ke')
     buat('basic jacavascript')
     buat('basic css')
-    await queryInterface.bulkInsert('pertemuan', data);
+    await queryInterface.bulkInsert('pertemuan_file', data);
   },
 
   async down (queryInterface, Sequelize) {
