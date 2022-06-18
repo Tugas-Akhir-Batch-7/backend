@@ -90,7 +90,7 @@ class User {
             //variabel
             const {name, email, otp} = req.body;
             const role = req.body.role || 'murid'
-            let resUser, profile
+            let resUser, resRole, profile
             
             //validasi
             if (!(name && req.body.password && email && otp)) throw 'masukkan semua data'
@@ -119,7 +119,7 @@ class User {
                 resUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo: profile }, { transaction: t })
 
                 //memasukkan data ke tabel murid
-                await murid.create({ 
+                resRole = await murid.create({ 
                     id_user: resUser.id, 
                     photo_ktp: ktp, 
                     address, 
@@ -129,21 +129,22 @@ class User {
             } else if (role == 'admin' || role == 'guru') {
                 resUser = await user.create({ name, email, password, role, photo: profile }, { transaction: t })
                 role == 'admin' ?
-                    resUser = await admin.create({ id_user: resUser.id }, { transaction: t }) :
-                    resUser = await guru.create({ id_user: resUser.id }, { transaction: t })
+                    resRole = await admin.create({ id_user: resUser.id }, { transaction: t }) :
+                    resRole = await guru.create({ id_user: resUser.id }, { transaction: t })
             }
-
-            await t.commit()
-
+            
             //menghapus data otp jika sudah register
-            await otpRegistrasi.destroy({ where: { email } })
-
+            await otpRegistrasi.destroy({where: {email: resUser.email}})
+            
+            await t.commit()
+            
             res.json({
                 success: true,
                 message: 'login berhasil',
                 data: resUser,
                 token: generateToken({
                     id: resUser.id,
+                    [`id_${resUser.role}`]:resRole.id,
                     name: resUser.name,
                     email: resUser.email,
                     role: resUser.role,
@@ -153,7 +154,11 @@ class User {
             await t.rollback()
             // next(error)
             console.log(error)
-            res.status(400).json({message:'terjadi error', error})
+            res.status(400).json({
+                success: false,
+                message: 'terjadi error',
+                error
+            })
         }
     }
     static async createOtpRegister(req, res, next) {
@@ -223,11 +228,19 @@ class User {
                     throw 'error saat kirim otp via email'
                 }
             })
-            res.send('otp berhasil dikirim')
+
+            res.json({
+                success: true,
+                message:'otp berhasil dikirim'
+            })
         } catch (error) {
             // next(error)
             console.log(error)
-            res.status(400).json({status:"terjadi error", error})
+            res.status(400).json({
+                success: false,
+                message: 'terjadi error',
+                error
+            })
         }
     }
     static async createOtpReset(req, res, next) {

@@ -29,6 +29,10 @@ router.post('/validResetOtp', user.validResetOtp)
 router.post('/resetPassword', user.resetPassword)
 
 //guru
+router.post('/guru/addBatch', guru.addBatch)
+router.get('/guru/listBatch', guru.listBatch)
+router.put('/guru/updateBatch/:id', guru.updateBatch)
+router.delete('/guru/deleteBatch/:id', guru.deleteBatch)
 router.post('/guru/addPertemuan', multer, guru.addPertemuan)
 router.get('/guru/daftarAbsensi', guru.daftarAbsensi)
 router.post('/guru/prosesAbsensi', guru.prosesAbsensi)

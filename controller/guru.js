@@ -2,6 +2,7 @@ const ApiError = require('../helpers/api-error');
 const db = require('../db/models')
 const { sequelize } = require("../db/models");
 const validFile = require('../middlewares/validate_file')
+const {verify } = require("../helpers/jwt-auth")
 
 //db
 const guru = db.Guru
@@ -22,6 +23,107 @@ class Guru{
         `)
         return cek[1].rowCount == true
     }
+    static async addBatch(req, res, next){
+        try {
+            //validasi
+            if(!req.body.name) throw 'masukkan nama batch'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if (token.role != 'guru') throw 'anda tidak bisa membuat batch'
+
+            //ambil input
+            const name = req.body.name
+            const start_date = req.body.startDate || new Date()
+            const pay = req.body.pay || 2000000
+
+            //create batch
+            const result = await batch.create({id_guru:token.id_guru, name, pay, start_date})
+
+            res.json({
+                success: true,
+                message: 'berhasil menambahkan batch',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async listBatch(req, res, next){
+        try {
+            //ambil token
+            const token = verify(req.headers.token)
+
+            //get batch
+            const result = await batch.findAll({where:{id_guru:token.id_guru}})
+
+            res.json({
+                success: true,
+                message: 'berhasil menambahkan batch',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async updateBatch(req, res, next){
+        try {
+            //validasi
+            if(!req.params.id) throw 'masukkan id batch'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if (token.role != 'guru') throw 'anda tidak bisa membuat batch'
+
+            //ambil input
+            let data = {}
+            const id = req.params.id
+            const {name, startDate, pay} = req.body
+            name ? data.name = name : false
+            startDate ? data.start_date = startDate : false
+            pay ? data.pay = pay : false
+
+            //create batch
+            const result = await batch.update(data, {where: {id, id_guru: token.id_guru}})
+
+            res.json({
+                success: true,
+                message: 'berhasil mengubah batch',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async deleteBatch(req, res, next){
+        try {
+            //validasi
+            if(!req.params.id) throw 'masukkan id batch'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if (token.role != 'guru') throw 'anda tidak bisa membuat batch'
+
+            //ambil input
+            const id = req.params.id
+
+            //delete batch
+            const result = await batch.destroy({where:{id, id_guru:token.id_guru}})
+
+            res.json({
+                success: true,
+                message: 'berhasil menghapus batch',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+
     static async addPertemuan(req, res, next){
         const t = await sequelize.transaction();
         try {
