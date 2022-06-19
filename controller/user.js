@@ -246,14 +246,14 @@ class User {
     }
     static async createOtpReset(req, res, next) {
         try {
+            //ambil token
+            const token = verify(req.headers.token)
+
             //otp
             let otp = 0
             while (otp < 100000 || otp > 999999) {
                 otp = Math.ceil(Math.random() * 1000000)
             }
-
-            //cek id dan email
-            if (!await user.findOne({ where: { id: req.body.id, email: req.body.email } })) throw 'data tidak sinkron'
 
             //kirim data otp ke database
             await sequelize.query(`INSERT INTO "otp" 
@@ -265,13 +265,13 @@ class User {
                     "valid_until" = EXCLUDED.valid_until,
                     "updated_at" = EXCLUDED.updated_at;`,
                 {
-                    replacements: [req.body.id, otp, new Date(new Date().getTime() + (1000 * 60 * timeOtp)).toISOString(), new Date().toISOString(), new Date().toISOString()],
+                    replacements: [token.id, otp, new Date(new Date().getTime() + (1000 * 60 * timeOtp)).toISOString(), new Date().toISOString(), new Date().toISOString()],
                     type: QueryTypes.UPSERT
                 }
             )
 
             //kirim otp via email
-            mailOptions.to = req.body.email
+            mailOptions.to = token.email
             mailOptions.text = `code otp\n${otp}`
             mail.sendMail(mailOptions, (err, info) => {
                 if (err) {
@@ -279,39 +279,70 @@ class User {
                     throw 'error saat kirim otp via email'
                 }
             })
-            res.send('berhasil')
+            res.json({
+                success: true,
+                message: 'berhasil mengirim otp reset password'
+            })
         } catch (error) {
-            // next()
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
     static async validResetOtp(req, res, next) {
         try {
+            if(!req.body.otp) throw 'masukkan otp'
+
+            //ambil token
+            const token = verify(req.headers.token)
+
             //validasi otp
-            if (!(await totp.findOne({ where: { id_user: req.body.id, otp: req.body.otp } }))) throw 'otp salah'
-            res.send('berhasil')
+            if (!(await totp.findOne({ where: { id_user: token.id, otp: req.body.otp } }))) throw 'otp salah'
+            res.json({
+                success: true,
+                message: 'otp valid'
+            })
         } catch (error) {
-            // next()
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
     static async resetPassword(req, res, next) {
         try {
+            let {otp, password} = req.body
+            if(!(otp && password)) throw 'masukkan otp dan password'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            const {id, role, email} = token
+
             //verifikasi lebih lanjut
-            if (!(await totp.findOne({ where: { id_user: req.body.id, otp: req.body.otp } }))) throw 'otp atau id salah'
+            if (!(await totp.findOne({ where: {id_user: id, otp}}))) throw 'otp atau id salah'
 
             //mengubah password
-            await user.update({ password: bcrypt.hashSync(req.body.password, 10) }, { where: { id: req.body.id } })
+            await user.update({password: bcrypt.hashSync(password, 10)}, {where: {id}})
 
             //menghapus data otp jika sudah register
-            await totp.destroy({ where: { id_user: req.body.id } })
-            res.send('berhasil')
+            // await totp.destroy({where: {id_user: id}})
+
+            const tokenRes = generateToken((await sequelize.query(`
+                SELECT 
+                    users.id,
+                    ${role}.id AS id_${role},
+                    users.name,
+                    users.email,
+                    users.role
+                FROM 
+                    users INNER JOIN ${role} ON users.id = ${role}.id_user AND users.email = '${email}'
+            `))[0][0]);
+
+            res.json({
+                success: true,
+                message: 'password berhasil diganti', 
+                token: tokenRes
+            })
         } catch (error) {
-            // next()
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
     static async profile(req, res, next) {

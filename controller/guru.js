@@ -69,6 +69,50 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    static async listAnggotaBatch(req, res, next){
+        try {
+            //validasi
+            let id = req.params.id
+            if(!id) throw 'masukkan id batch'
+
+            //ambil token
+            const token = verify(req.headers.token)
+
+            //get anggota batch
+            const result = await murid.findAll({where:{id_batch:id}})
+
+            res.json({
+                success: true,
+                message: 'berhasil menambahkan batch',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async accAnggotaBatch(req, res, next){
+        try {
+            //validasi
+            let id = req.params.id
+            if(!id) throw 'masukkan id murid'
+
+            //ambil token
+            const token = verify(req.headers.token)
+
+            //update status murid
+            const result = await murid.update({status: 'terdaftar'}, {where:{status: 'mendaftar', id}})
+
+            res.json({
+                success: true,
+                message: 'berhasil menambahkan batch',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
     static async updateBatch(req, res, next){
         try {
             //validasi

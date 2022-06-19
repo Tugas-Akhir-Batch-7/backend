@@ -31,6 +31,8 @@ router.post('/resetPassword', user.resetPassword)
 //guru
 router.post('/guru/addBatch', guru.addBatch)
 router.get('/guru/listBatch', guru.listBatch)
+router.get('/guru/listAnggotaBatch/:id', guru.listAnggotaBatch)
+router.get('/guru/accAnggotaBatch/:id', guru.accAnggotaBatch)
 router.put('/guru/updateBatch/:id', guru.updateBatch)
 router.delete('/guru/deleteBatch/:id', guru.deleteBatch)
 
