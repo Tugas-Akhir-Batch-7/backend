@@ -11,15 +11,15 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Ujian.belongsTo(models.Batch, { targetKey: 'id', foreignKey: 'id_batch' })
-      Ujian.belongsTo(models.Guru, { targetKey: 'id', foreignKey: 'id_guru' })
+      // Ujian.belongsTo(models.Batch, { targetKey: 'id', foreignKey: 'id_batch' })
+      // Ujian.belongsTo(models.Guru, { targetKey: 'id', foreignKey: 'id_guru' })
 
-      Ujian.hasMany(models.UjianSubmission, { targetKey: 'id', foreignKey: 'id_ujian' })
+      // Ujian.hasMany(models.UjianSubmission, { targetKey: 'id', foreignKey: 'id_ujian' })
     }
   }
   Ujian.init({
-    id_guru: DataTypes.INTEGER,
     id_batch: DataTypes.INTEGER,
+    pengawas: DataTypes.STRING,
     name: DataTypes.STRING,
     date: DataTypes.DATE,
     time: DataTypes.TIME

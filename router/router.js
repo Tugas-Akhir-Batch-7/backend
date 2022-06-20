@@ -36,27 +36,41 @@ router.get('/guru/accAnggotaBatch/:id', guru.accAnggotaBatch)
 router.put('/guru/updateBatch/:id', guru.updateBatch)
 router.delete('/guru/deleteBatch/:id', guru.deleteBatch)
 
+//pertemuan
 router.post('/guru/addPertemuan/', multer, guru.addPertemuan)
 router.get('/guru/listPertemuan', guru.listPertemuan)
-router.get('/guru/listJadwalPertemuan', guru.listJadwalPertemuan)
-router.get('/guru/detailPertemuan/:id', guru.detailPertemuan)
+router.get('/guru/listJadwalPertemuan', guru.listJadwalPertemuan) 
 router.put('/guru/updatePertemuan/:id', guru.updatePertemuan)
 router.delete('/guru/deletePertemuan/:id', guru.deletePertemuan)
 
-router.get('/guru/listAbsensi', guru.listAbsensi)
-router.post('/guru/prosesAbsensi', guru.prosesAbsensi)
-router.get('/guru/listTugas', guru.listTugas)
-router.get('/guru/listTugasMurid', guru.listTugasMurid)
+//tugas
+router.get('/guru/listTugas/:id', guru.listTugas)
+router.get('/guru/listTugasSubmit/:id', guru.listTugasSubmit)
+router.post('/guru/addTugas/:id', guru.addTugas)
+router.put('/guru/updateTugas/:id', guru.updateTugas)
+router.delete('/guru/deleteTugas/:id', guru.deleteTugas)
+
+//absensi
+router.get('/guru/listAbsensi/:id', guru.listAbsensi)
+router.post('/guru/prosesAbsensi/:id', guru.prosesAbsensi)
+
+//ujian
+router.get('/guru/listUjian/:id', guru.listUjian)
+router.get('/guru/listUjianSubmit/:id', guru.listUjianSubmit)
+router.post('/guru/addUjian/:id', guru.addUjian)
+
 router.post('/guru/addScoreTugas', guru.addScoreTugas)
-router.post('/guru/addUjian', guru.addUjian)
-router.get('/guru/getUjian', guru.getUjian)
 router.get('/guru/getPesertaUjian', guru.getPesertaUjian)
 router.post('/guru/addScoreUjian', guru.addScoreUjian)
 
 //murid
-router.get('/murid/getPertemuan', murid.getPertemuan)
-router.post('/murid/addTugas', murid.addTugas)
-router.post('/murid/addUjian', murid.addUjian)
+router.get('/murid/dataUjian', murid.dataUjian)
+router.get('/murid/dataAbsenMateri', murid.dataAbsenMateri)
+router.post('/murid/addTugas/:id', murid.addTugas)
+router.post('/murid/addUjian/:id', murid.addUjian)
+
+router.get('/murid/listBatch', murid.listBatch)
+router.get('/murid/addBatch/:id', murid.addBatch)
 
 router.use('/user', userRoute)
 router.use('/admin', adminRoute)

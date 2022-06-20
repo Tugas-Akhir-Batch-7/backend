@@ -34,14 +34,14 @@ module.exports = {
         allowNull: false,
         type: Sequelize.DATE
       }
-    },{indexes:[
+    },{indexes: [
       {
-        unique:true,
-        fields:['id_pertemuan', 'id_murid']
+        unique: true,
+        fields: ['id_murid', 'id_pertemuan']
       }
     ]});
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('absensis');
+    await queryInterface.dropTable('absensi');
   }
 };
