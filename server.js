@@ -15,6 +15,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(cors())
+// console.log(cors)
 //session
 app.use(session({
     secret: 'sessoin',
