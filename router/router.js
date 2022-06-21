@@ -43,25 +43,33 @@ router.get('/guru/listJadwalPertemuan', guru.listJadwalPertemuan)
 router.put('/guru/updatePertemuan/:id', guru.updatePertemuan)
 router.delete('/guru/deletePertemuan/:id', guru.deletePertemuan)
 
+//file pertemuan
+router.get('/guru/listFilePertemuan/:id', guru.listFilePertemuan)
+router.post('/guru/addFilePertemuan/:id', multer, guru.addFilePertemuan)
+router.put('/guru/updateFilePertemuan/:id', multer,guru.updateFilePertemuan)
+router.delete('/guru/deleteFilePertemuan/:id', guru.deleteFilePertemuan)
+
 //tugas
 router.get('/guru/listTugas/:id', guru.listTugas)
 router.get('/guru/listTugasSubmit/:id', guru.listTugasSubmit)
 router.post('/guru/addTugas/:id', guru.addTugas)
 router.put('/guru/updateTugas/:id', guru.updateTugas)
 router.delete('/guru/deleteTugas/:id', guru.deleteTugas)
+router.post('/guru/addScoreTugas/:id', guru.addScoreTugas)
 
 //absensi
 router.get('/guru/listAbsensi/:id', guru.listAbsensi)
 router.post('/guru/prosesAbsensi/:id', guru.prosesAbsensi)
 
 //ujian
+router.post('/guru/addUjian/:id', guru.addUjian)
 router.get('/guru/listUjian/:id', guru.listUjian)
 router.get('/guru/listUjianSubmit/:id', guru.listUjianSubmit)
-router.post('/guru/addUjian/:id', guru.addUjian)
+router.put('/guru/updateUjian/:id', guru.updateUjian)
+router.delete('/guru/deleteUjian/:id', guru.deleteUjian)
+router.post('/guru/addScoreUjian/:id', guru.addScoreUjian)
 
-router.post('/guru/addScoreTugas', guru.addScoreTugas)
-router.get('/guru/getPesertaUjian', guru.getPesertaUjian)
-router.post('/guru/addScoreUjian', guru.addScoreUjian)
+// router.get('/guru/getPesertaUjian', guru.getPesertaUjian)
 
 //murid
 router.get('/murid/dataUjian', murid.dataUjian)

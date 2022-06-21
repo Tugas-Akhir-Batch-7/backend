@@ -26,6 +26,7 @@ class Guru{
         return cek[1].rowCount == true
     }
     //batch
+    //menambah batch
     static async addBatch(req, res, next){
         try {
             //validasi
@@ -53,6 +54,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //daftar batch punya sendiri
     static async listBatch(req, res, next){
         try {
             //ambil token
@@ -71,6 +73,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //daftar anggota beserta pendaftar batch nya
     static async listAnggotaBatch(req, res, next){
         try {
             //validasi
@@ -93,6 +96,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //menerima anggota batch
     static async accAnggotaBatch(req, res, next){
         try {
             //validasi
@@ -115,6 +119,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //mengubah batch (nama, tanggal mulain, dan uang pembayaran)
     static async updateBatch(req, res, next){
         try {
             //validasi
@@ -144,6 +149,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //hapus batch
     static async deleteBatch(req, res, next){
         try {
             //validasi
@@ -170,6 +176,7 @@ class Guru{
     }
 
     //pertemuan
+    //tambah pertemuan
     static async addPertemuan(req, res, next){
         const t = await sequelize.transaction();
         try {
@@ -248,6 +255,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //daftar pertemuan dari batch sendiri
     static async listPertemuan(req, res, next){
         try {
             //ambil token
@@ -278,6 +286,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //daftarjadwal pertemuan yang harus dihadiri
     static async listJadwalPertemuan(req, res, next){
         try {
             //ambil token
@@ -307,6 +316,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //mengubah pertemuan (name, ket, pengajar, dan tanggal pertemuan)
     static async updatePertemuan(req, res, next){
         try {
             //validasi
@@ -340,6 +350,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //hapus pertemuan
     static async deletePertemuan(req, res, next){
         try {
             //validasi
@@ -365,7 +376,129 @@ class Guru{
         }
     }
 
+    //file pertemuan
+    //daftar file pertemuan dari batch sendiri
+    static async listFilePertemuan(req, res, next){
+        try {
+            //input
+            const id = req.params.id
+            if(!id) throw 'masukkan id pertemuan'
+
+            //ambil token
+            const token = verify(req.headers.token)
+
+            //ambil data
+            let data = await pertemuanFile.findAll({where:{id_pertemuan:id}})
+            
+            res.json({
+                success: true,
+                message: 'menampilkan daftar file petemuan',
+                data
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    //tambah file pertemuan
+    static async addFilePertemuan(req, res, next){
+        try {
+            //input
+            let file = req.files.file || null
+            let ketFile = req.body.ketFile || []
+            let id = req.params.id
+
+            //validasi
+            if(!file) throw 'tidak ada file'
+            if(!id) throw "masukkan id pertemuan"
+            if(!Array.isArray(ketFile)) ketFile = []
+            
+            //ambil token
+            const token = verify(req.headers.token)
+
+            //proses
+            let data = []
+            for (let i = 0; i < file.length; i++) {
+                data.push({
+                    id_pertemuan: id,
+                    file: await validFile.validFile(file[i], 'upload'),
+                    ket: ketFile[i] || null
+                })
+            }
+            data = await pertemuanFile.bulkCreate(data)
+                        
+            res.json({
+                success: true,
+                message: 'berhasil menambah file',
+                data
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    //mengubah pertemuan (name, ket, pengajar, dan tanggal pertemuan)
+    static async updateFilePertemuan(req, res, next){
+        try {
+            console.log("asd")
+            //input
+            const id = req.params.id
+            const file = req.files.file || null
+            const ket = req.body.ket || null
+            
+            //validasi
+            if(!req.params.id) throw 'masukkan id file pertemuan'
+            if(!(file || ket)) throw 'masukkan data baru'
+            
+            //ambil token
+            const token = verify(req.headers.token)
+            
+            //data
+            let data = {}
+            file ? data.file =  await validFile.validFile(file[0], 'upload') : false
+            ket ? data.ket = ket : false
+            
+            //update file
+            const result = await pertemuanFile.update(data, {where: {id}})
+
+            res.json({
+                success: true,
+                message: 'berhasil mengubah file pertemuan',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    //hapus pertemuan
+    static async deleteFilePertemuan(req, res, next){
+        try {
+            //validasi
+            if(!req.params.id) throw 'masukkan id file pertemuan'
+
+            //ambil token
+            const token = verify(req.headers.token)
+
+            //ambil input
+            const id = req.params.id
+
+            //delete pertemuan
+            const result = await pertemuanFile.destroy({where:{id}})
+
+            res.json({
+                success: true,
+                message: 'berhasil menghapus file pertemuan',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+
     //tugas
+    //daftar tugas berdasarkan pertemuan
     static async listTugas(req, res, next){
         try {
             //input
@@ -387,7 +520,7 @@ class Guru{
             
             res.json({
                 success: true,
-                message: 'menampilkan daftar petemuan',
+                message: 'menampilkan daftar tugas',
                 data
             })
         } catch (error) {
@@ -395,38 +528,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
-    static async listTugasSubmit(req, res, next){
-        try {
-            //input
-            let id = req.params.id //id pertemuan
-            if(!id) throw 'masukkan id tugas'
-            
-            //ambil token
-            const token = verify(req.headers.token)
-
-            //ambil data
-            let data = (await sequelize.query(`
-                SELECT 
-                    tugas_submission.id,
-                    tugas_submission.id_tugas,
-                    tugas_submission.id_murid,
-                    tugas_submission.score,
-                    tugas_submission.submit_date,
-                    tugas_submission.submit_link
-                FROM
-                    tugas INNER JOIN tugas_submission ON tugas.id = tugas_submission.id_tugas AND id_tugas = ${id}
-            `))[0] || null
-            
-            res.json({
-                success: true,
-                message: 'menampilkan daftar petemuan',
-                data
-            })
-        } catch (error) {
-            console.log(error)
-            res.status(400).json({ success: false, message:'terjadi error', error})
-        }
-    }
+    //menambahkan tugas
     static async addTugas(req, res, next){
         try {
             //input
@@ -456,7 +558,7 @@ class Guru{
 
             res.json({
                 success: true,
-                message: 'berhasil menambahkan batch',
+                message: 'berhasil menambahkan tugas',
                 data: resultTugas
             })
         } catch (error) {
@@ -464,6 +566,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //mengubah tugas (name dan description)
     static async updateTugas(req, res, next){
         try {
             //input
@@ -504,6 +607,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //menghapus tugas
     static async deleteTugas(req, res, next){
         try {
             //input
@@ -538,8 +642,69 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //daftar tugas submit berdasarkan pertemuan
+    static async listTugasSubmit(req, res, next){
+        try {
+            //input
+            let id = req.params.id //id pertemuan
+            if(!id) throw 'masukkan id tugas'
+            
+            //ambil token
+            const token = verify(req.headers.token)
+
+            //ambil data
+            let data = (await sequelize.query(`
+                SELECT 
+                    tugas_submission.id,
+                    tugas_submission.id_tugas,
+                    tugas_submission.id_murid,
+                    tugas_submission.score,
+                    tugas_submission.submit_date,
+                    tugas_submission.submit_link
+                FROM
+                    tugas INNER JOIN tugas_submission ON tugas.id = tugas_submission.id_tugas AND id_tugas = ${id}
+            `))[0] || null
+            
+            res.json({
+                success: true,
+                message: 'menampilkan daftar petemuan',
+                data
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    //menambahkan score tugas submit
+    static async addScoreTugas(req, res, next){
+        try {
+            //input
+            let id = req.params.id //id tugas
+            if(!id) throw 'masukkan id tugas'
+            
+            //ambil token
+            const token = verify(req.headers.token)
+
+            let input = req.body
+            let data = []
+            for (const key in input) {
+                if(!input[key]) continue
+                data.push(await tugasSub.update({score:input[key]},{where:{id_tugas:id, id:key}}))
+            }
+
+            res.json({
+                success: true,
+                message: 'memasukkan score tugas',
+                data
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
 
     //absensi
+    //daftar absensi per pertemuan
     static async listAbsensi(req, res, next){
         try {
             //input
@@ -575,6 +740,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //proses absensi
     static async prosesAbsensi(req, res, next){
         try {
             //input
@@ -625,6 +791,7 @@ class Guru{
     }
 
     //ujian
+    //list ujian per batch
     static async listUjian(req, res, next){
         try {
             //input
@@ -650,6 +817,62 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //mengubah ujian (name, pengawas, date, time)
+    static async updateUjian(req, res, next){
+        try {
+            //input
+            const id = req.params.id
+            if(!id) throw 'masukkan id ujian'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'anda bukan guru'
+
+            //input
+            let data = {}
+            req.body.name ? data.name = req.body.name : false
+            req.body.pengawas ? data.pengawas = req.body.pengawas : false
+            req.body.date ? data.date = req.body.date : false
+            req.body.time ? data.time = req.body.time : false
+
+            //update pertemuan
+            const result = await ujian.update(data, {where: {id}})
+
+            res.json({
+                success: true,
+                message: 'berhasil mengubah ujian',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    //menghapus tugas
+    static async deleteUjian(req, res, next){
+        try {
+            //input
+            const id = req.params.id //tugas
+            if(!id) throw 'masukkan id ujian'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'anda bukan guru'
+
+            //delete tugas
+            const result = await ujian.destroy({where:{id}})
+
+            res.json({
+                success: true,
+                message: 'berhasil menghapus ujian',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    //list ujian submit per pertemuan
     static async listUjianSubmit(req, res, next){
         try {
             //input
@@ -682,6 +905,7 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //menambahkan ujian
     static async addUjian(req, res, next){
         try {
             //input
@@ -718,118 +942,34 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
-
-    
-    static async addScoreTugas(req, res, next){
-        try {
-            //validasi
-            if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
-            if(!(req.body.tugas && req.body.score)) throw ApiError.badRequest("data tidak lengkap")
-            if(!(
-                //pemilik batch
-                (await sequelize.query(`
-                    SELECT * 
-                    FROM pertemuan INNER JOIN tugas ON pertemuan.id = tugas.id_pertemuan and tugas.id = ${req.body.tugas}
-                    INNER JOIN batch on batch.id = pertemuan.id_batch and batch.id_guru =  ${req.body.id}
-                `))[1].rowCount || 
-                //pengajar pertemuan
-                (await sequelize.query(`
-                    SELECT * 
-                    FROM pertemuan INNER JOIN tugas ON pertemuan.id = tugas.id_pertemuan AND pertemuan.id_guru = ${req.body.id} and tugas.id = ${req.body.tugas}
-                `))[1].rowCount
-            )) throw 'tidak memliliki hak untuk memberikan nilai pada tugas di batch ini'
-            
-            //proses
-            //score[i][0] = id tugas submission
-            //score[i][1] = nilai
-            let score = req.body.score
-            for (let i = 0; i < score.length; i++) {
-                if(score[i][0] && score[i][1]){
-                    //kirim data pertemuan ke database
-                    await tugasSub.update({score:score[i][1]},{
-                        where:{id_tugas:req.body.tugas, id:score[i][0]}
-                    })
-                }
-            }
-
-            res.json({status:'berhasil'})
-        } catch (error) {
-            console.log(error)
-            res.status(400).json(['terjadi error', error])
-        }
-    }
-    static async updateUjian(req, res, next){
-        try {
-            //validasi{
-
-        } catch (error) {
-            next(error)
-        }
-    }
-    static async deleteUjian(req, res, next){
-        try {
-            //validasi{
-
-        } catch (error) {
-            next(error)
-        }
-    }
-    static async getPesertaUjian(req, res, next){
-        try {
-            //validasi
-            if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
-            if(!(req.body.batch && req.body.ujian)) throw ApiError.badRequest("data tidak lengkap")
-
-            //ambil data peserta yang mengikuti ujian
-            let data = await sequelize.query(`
-                SELECT 
-                    users.name, 
-                    ujian_submission.score, 
-                    ujian_submission.submit_link, 
-                    ujian_submission.submit_date, 
-                    ujian_submission.id AS "id ujian submit", 
-                    murid.id AS "id murid"
-                FROM murid INNER JOIN ujian_submission ON murid.id = ujian_submission.id_murid AND ujian_submission.id_ujian = '${req.body.ujian}' 
-                INNER JOIN users ON users.id = murid.id_user
-            `)
-
-            res.json({status:'berhasil',data: data[0]})
-        } catch (error) {
-            console.log(error)
-            res.status(400).json(['terjadi error', error])
-            // next(error)         
-        }
-    }
+    //menambahkan score ujian murid
     static async addScoreUjian(req, res, next){
         try {
-            //validasi
-            if(!(req.body.id && req.body.password && await Guru.cekGuru(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
-            if(!(req.body.ujian && req.body.score)) throw ApiError.badRequest("data tidak lengkap")
-            if(!//pemilik batch
-            (await sequelize.query(`
-                SELECT * 
-                FROM pertemuan INNER JOIN tugas ON pertemuan.id = tugas.id_pertemuan and tugas.id = ${req.body.tugas}
-                INNER JOIN batch on batch.id = pertemuan.id_batch and batch.id_guru =  ${req.body.id}
-            `))[1].rowCount) throw 'tidak memliliki hak untuk memberikan nilai pada ujian di batch ini'
-            
-            //proses
-            //score[i][0] = id tugas submission
-            //score[i][1] = nilai
-            let score = req.body.score
-            for (let i = 0; i < score.length; i++) {
-                if(score[i][0] && score[i][1]){
-                    //kirim data pertemuan ke database
-                    await ujianSub.update({score:score[i][1]},{
-                        where:{id_ujian:req.body.ujian, id:score[i][0]}
-                    })
-                }
-            }
+            //input
+            const id = req.params.id //tugas
+            if(!id) throw 'masukkan id ujian'
 
-            res.json({status:'berhasil'})
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'anda bukan guru'
+
+            //proses
+            let input = req.body
+            let data = []
+            for (const key in input) {
+                if(!(input[key] && Number.isInteger(Number.parseInt(key)))) continue
+                console.log('jalan')
+                data.push(await ujianSub.update({score:input[key]},{where:{id_ujian:id, id:key}}))
+            }
+            
+            res.json({
+                success: true,
+                message: 'berhasil menambahkan score ujian',
+                data
+            })
         } catch (error) {
             console.log(error)
-            res.status(400).json(['terjadi error', error])
-            // next(error)         
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
 }

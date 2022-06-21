@@ -25,13 +25,6 @@ const tugasSubmit = db.TugasSubmission
 
 
 class Murid {
-    static async cekMurid(id, pass) {
-        let cek = await sequelize.query(`
-            SELECT * FROM murid INNER JOIN users ON murid.id_user = users.id 
-            WHERE murid.id = '${id}' AND users.password = '${pass}'
-        `)
-        return cek[1].rowCount == true
-    }
     static async dataUjian(req, res, next){
         try {            
             //ambil token
