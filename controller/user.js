@@ -357,11 +357,11 @@ class User {
             // console.log(req.body.address)
             userUpdated = userUpdated[1][0].toJSON()
             userUpdated.password = undefined
-            console.log(userUpdated)
-            
+            // console.log(userUpdated)
+
             let profileUpdated
             if (userGet.role === 'murid') {
-                console.log("sini")
+                // console.log("sini")
                 profileUpdated = await murid.update({
                     address: req.body.address,
                     birthday_date: req.body.birthday_date,

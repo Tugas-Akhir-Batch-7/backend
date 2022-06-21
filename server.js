@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser')
 var session = require('express-session')
 const morgan = require('morgan')
+const cors = require('cors')
 
 //setup import
 const db = require('./db/models')
@@ -13,6 +14,7 @@ const errorHandler = require('./middlewares/error-handler');
 const app = express();
 const port = process.env.PORT || 5000;
 
+app.use(cors())
 //session
 app.use(session({
     secret: 'sessoin',
