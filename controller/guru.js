@@ -687,9 +687,10 @@ class Guru{
 
             let input = req.body
             let data = []
-            for (const key in input) {
-                if(!input[key]) continue
-                data.push(await tugasSub.update({score:input[key]},{where:{id_tugas:id, id:key}}))
+            for (let key in input) {
+                let idScore = Number.parseInt(key)
+                if(!(input[key] && Number.isInteger(idScore))) continue
+                data.push(await tugasSub.update({score:input[key]},{where:{id_tugas:id, id:idScore}}))
             }
 
             res.json({
@@ -956,10 +957,10 @@ class Guru{
             //proses
             let input = req.body
             let data = []
-            for (const key in input) {
-                if(!(input[key] && Number.isInteger(Number.parseInt(key)))) continue
-                console.log('jalan')
-                data.push(await ujianSub.update({score:input[key]},{where:{id_ujian:id, id:key}}))
+            for (let key in input) {
+                let idScore = Number.parseInt(key)
+                if(!(input[key] && Number.isInteger(idScore))) continue
+                data.push(await ujianSub.update({score:input[key]},{where:{id_ujian:id, id:idScore}}))
             }
             
             res.json({
