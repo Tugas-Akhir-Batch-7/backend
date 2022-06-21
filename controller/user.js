@@ -62,6 +62,7 @@ class User {
                     userGet.password = undefined;
                     const payload = {
                         id: userGet.id,
+                        [`id_${userGet.role}`] :(await sequelize.query(`SELECT id FROM ${userGet.role} WHERE id_user = ${userGet.id}`))[0][0].id,
                         name: userGet.name,
                         email: userGet.email,
                         role: userGet.role,
@@ -88,59 +89,77 @@ class User {
         const t = await sequelize.transaction();
         try {
             //variabel
-            const name = req.body.username
-            const password = bcrypt.hashSync(req.body.password, 10)
-            const email = req.body.email
-            const role = req.body.role
-            let profile = 'default.png'
-
+            const {name, email, otp} = req.body;
+            const role = req.body.role || 'murid'
+            let resUser, resRole, profile
+            
             //validasi
-            if (!(name && password && email && role)) throw 'masukkan semua data'
+            if (!(name && req.body.password && email && otp)) throw 'masukkan semua data'
             //cek otp
-            let otp = await otpRegistrasi.findOne({ where: { otp: req.body.otp, email, role } })
-            if (!otp) throw 'otp tidak valid'
-
+            if(!(await otpRegistrasi.findOne({where: {otp , email, role}}))) throw 'otp tidak valid'
+            
+            //process
+            //encript password
+            const password = bcrypt.hashSync(req.body.password, 10)
             //image process profile
-            req.files.profile.length ?
+            req.files.profile ? 
                 profile = await validFile.validProfile(req.files.profile[0]) :
-                false
+                profile = 'default.png'
 
-            //kirim data register ke database
-            let resUser
+            
             if (role == 'murid') {
-                const address = req.body.address
-                const contact = req.body.contact
-                const birthday = req.body.birthday
-                let ktp
-
+                //variabel
+                const {address, contact, birthday} = req.body
+                
+                //proses
+                if(!(address && contact && birthday)) throw 'masukkan semua data murid'
                 //image process ktp
-                if (req.files.ktp.length) ktp = await validFile.validKtp(req.files.ktp[0])
-                else throw 'masukkan ktp'
-                console.log(ktp)
+                if(!req.files.ktp) throw 'masukkan ktp'
+                let ktp = await validFile.validKtp(req.files.ktp[0])
+                //kirim user
+                resUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo: profile }, { transaction: t })
 
-                //memasukkan data ke tabel user
-                resUser = await user.create({ name, email, password, role, email_verified_at: new Date(), photo: profile }, { transaction: t })
-
-                //memasukkan data ke tabel murid
-                await murid.create({ id_user:resUser.id, photo_ktp: ktp, address, contact, birthday, birthday_date: new Date() }, { transaction: t })
+                //kirim murid
+                resRole = await murid.create({ 
+                    id_user: resUser.id, 
+                    photo_ktp: ktp, 
+                    address, 
+                    contact, 
+                    birthday_date: birthday 
+                }, { transaction: t })
             } else if (role == 'admin' || role == 'guru') {
                 resUser = await user.create({ name, email, password, role, photo: profile }, { transaction: t })
                 role == 'admin' ?
-                    resUser = await admin.create({ id_user: resUser.id }, { transaction: t }) :
-                    resUser = await guru.create({ id_user: resUser.id }, { transaction: t })
+                    resRole = await admin.create({ id_user: resUser.id }, { transaction: t }) :
+                    resRole = await guru.create({ id_user: resUser.id }, { transaction: t })
             }
-
+            
+            //hapus otp
+            await otpRegistrasi.destroy({where: {email: resUser.email}})
+            
             await t.commit()
-
-            //menghapus data otp jika sudah register
-            // await otpRegistrasi.destroy({ where: { email } })
-
-            res.send('register berhasil')
+            
+            res.json({
+                success: true,
+                message: 'login berhasil',
+                data: resUser,
+                token: generateToken({
+                    id: resUser.id,
+                    [`id_${resUser.role}`]:resRole.id,
+                    name: resUser.name,
+                    email: resUser.email,
+                    role: resUser.role,
+                })
+            })
         } catch (error) {
             await t.rollback()
             // next(error)
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({
+                success: false,
+                message: 'terjadi error',
+                error
+            })
         }
     }
     static async createOtpRegister(req, res, next) {
@@ -148,32 +167,27 @@ class User {
             //variabel
             let emailOtp
             const email = req.body.email
-            const role = req.body.role
+            const role = req.body.role || 'murid'
             const usernameAdmin = req.body.usernameAdmin
 
             //cek email
-            if (!(email && role)) throw 'lengkapi semua data'
+            if (!(email)) throw 'isi email'
 
             //role
-            if (role == 'admin') {
-                emailOtp = SU.email
-            } else if (role == 'guru') {
-                //cek penerima otp
-                if (!usernameAdmin) throw 'masukkan username admin untuk menerima otp'
-                //mencari email penerima
-                emailOtp = await user.findOne({
-                    attributes: ['email'],
-                    where: { name: usernameAdmin, role: 'admin' }
-                })
-                //cek adat tidaknya username penerima email otp
-                if (!emailOtp) throw 'username tidak ada'
-                emailOtp = emailOtp.email
-            } else if (role == 'murid') {
-                //cek penerima otp
-                if (!req.body.email) throw 'masukkan email'
-                emailOtp = req.body.email
-            } else {
-                throw 'role tidak tersedia'
+            switch (role) {
+                case 'admin':
+                    emailOtp = SU.email
+                    break;
+                case 'guru':
+                    if (!usernameAdmin) throw 'masukkan username admin untuk menerima otp'
+                    if (!(emailOtp = (await user.findOne({where: { name: usernameAdmin, role: 'admin' }})))) throw 'username admin tidak ada'
+                    emailOtp = emailOtp.email
+                    break;
+                case 'murid':
+                    emailOtp = req.body.email
+                    break;
+                default:
+                    throw 'role tidak tersedia'
             }
 
             //otp
@@ -194,12 +208,19 @@ class User {
                     "valid_until" = EXCLUDED.valid_until,
                     "updated_at" = EXCLUDED.updated_at;`,
                 {
-                    replacements: [email, otp, role, new Date(new Date().getTime() + (1000 * 60 * timeOtp)).toISOString(), new Date().toISOString(), new Date().toISOString()],
+                    replacements: [
+                        email,
+                        otp,
+                        role,
+                        new Date(new Date().getTime() + (1000 * 60 * timeOtp)).toISOString(),
+                        new Date().toISOString(),
+                        new Date().toISOString()
+                    ],
                     type: QueryTypes.UPSERT
                 }
             )
 
-            //kirim otp via email
+            //kirim otp email
             mailOptions.to = emailOtp
             mailOptions.text = `code otp\n${otp}`
             mail.sendMail(mailOptions, (err, info) => {
@@ -208,23 +229,31 @@ class User {
                     throw 'error saat kirim otp via email'
                 }
             })
-            res.send('behasil')
+
+            res.json({
+                success: true,
+                message:'otp berhasil dikirim'
+            })
         } catch (error) {
-            next(error)
-            // console.log(error)
-            // res.status(400).json(['terjadi error', error])
+            // next(error)
+            console.log(error)
+            res.status(400).json({
+                success: false,
+                message: 'terjadi error',
+                error
+            })
         }
     }
     static async createOtpReset(req, res, next) {
         try {
+            //ambil token
+            const token = verify(req.headers.token)
+
             //otp
             let otp = 0
             while (otp < 100000 || otp > 999999) {
                 otp = Math.ceil(Math.random() * 1000000)
             }
-
-            //cek id dan email
-            if (!await user.findOne({ where: { id: req.body.id, email: req.body.email } })) throw 'data tidak sinkron'
 
             //kirim data otp ke database
             await sequelize.query(`INSERT INTO "otp" 
@@ -236,13 +265,13 @@ class User {
                     "valid_until" = EXCLUDED.valid_until,
                     "updated_at" = EXCLUDED.updated_at;`,
                 {
-                    replacements: [req.body.id, otp, new Date(new Date().getTime() + (1000 * 60 * timeOtp)).toISOString(), new Date().toISOString(), new Date().toISOString()],
+                    replacements: [token.id, otp, new Date(new Date().getTime() + (1000 * 60 * timeOtp)).toISOString(), new Date().toISOString(), new Date().toISOString()],
                     type: QueryTypes.UPSERT
                 }
             )
 
             //kirim otp via email
-            mailOptions.to = req.body.email
+            mailOptions.to = token.email
             mailOptions.text = `code otp\n${otp}`
             mail.sendMail(mailOptions, (err, info) => {
                 if (err) {
@@ -250,39 +279,70 @@ class User {
                     throw 'error saat kirim otp via email'
                 }
             })
-            res.send('berhasil')
+            res.json({
+                success: true,
+                message: 'berhasil mengirim otp reset password'
+            })
         } catch (error) {
-            // next()
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
     static async validResetOtp(req, res, next) {
         try {
+            if(!req.body.otp) throw 'masukkan otp'
+
+            //ambil token
+            const token = verify(req.headers.token)
+
             //validasi otp
-            if (!(await totp.findOne({ where: { id_user: req.body.id, otp: req.body.otp } }))) throw 'otp salah'
-            res.send('berhasil')
+            if (!(await totp.findOne({ where: { id_user: token.id, otp: req.body.otp } }))) throw 'otp salah'
+            res.json({
+                success: true,
+                message: 'otp valid'
+            })
         } catch (error) {
-            // next()
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
     static async resetPassword(req, res, next) {
         try {
+            let {otp, password} = req.body
+            if(!(otp && password)) throw 'masukkan otp dan password'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            const {id, role, email} = token
+
             //verifikasi lebih lanjut
-            if (!(await totp.findOne({ where: { id_user: req.body.id, otp: req.body.otp } }))) throw 'otp atau id salah'
+            if (!(await totp.findOne({ where: {id_user: id, otp}}))) throw 'otp atau id salah'
 
             //mengubah password
-            await user.update({ password: bcrypt.hashSync(req.body.password, 10) }, { where: { id: req.body.id } })
+            await user.update({password: bcrypt.hashSync(password, 10)}, {where: {id}})
 
             //menghapus data otp jika sudah register
-            await totp.destroy({ where: { id_user: req.body.id } })
-            res.send('berhasil')
+            // await totp.destroy({where: {id_user: id}})
+
+            const tokenRes = generateToken((await sequelize.query(`
+                SELECT 
+                    users.id,
+                    ${role}.id AS id_${role},
+                    users.name,
+                    users.email,
+                    users.role
+                FROM 
+                    users INNER JOIN ${role} ON users.id = ${role}.id_user AND users.email = '${email}'
+            `))[0][0]);
+
+            res.json({
+                success: true,
+                message: 'password berhasil diganti', 
+                token: tokenRes
+            })
         } catch (error) {
-            // next()
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
     static async profile(req, res, next) {

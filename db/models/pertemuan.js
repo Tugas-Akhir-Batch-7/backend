@@ -20,7 +20,6 @@ module.exports = (sequelize, DataTypes) => {
     id_guru: DataTypes.INTEGER,
     name: DataTypes.STRING,
     ket: DataTypes.STRING,
-    file: DataTypes.JSON,
     date: DataTypes.DATE
   }, {
     sequelize,

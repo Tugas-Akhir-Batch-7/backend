@@ -8,15 +8,6 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      id_guru: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-        references: {
-          model: 'guru',
-        },
-        onDelete: 'cascade',
-        onUpdate: 'cascade'
-      },
       id_batch: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -25,6 +16,11 @@ module.exports = {
         },
         onDelete: 'cascade',
         onUpdate: 'cascade'
+      },
+      pengawas: {
+        type: Sequelize.STRING,
+        allowNull: false,
+
       },
       name: {
         type: Sequelize.STRING,

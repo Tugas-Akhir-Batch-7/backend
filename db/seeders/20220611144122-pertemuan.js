@@ -20,7 +20,6 @@ module.exports = {
           id_guru:Math.ceil(Math.random() * 10),
           name:`materi ujian ke ${i}`,
           ket: `${name} ${i}`,
-          file:`[["123.jpg", null], ["file.docx", "materi tentang java script"]]`,
           date: new Date(),
           created_at: new Date(),
           updated_at: new Date()

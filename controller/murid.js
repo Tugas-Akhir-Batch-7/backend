@@ -2,12 +2,15 @@ const ApiError = require('../helpers/api-error');
 const db = require('../db/models')
 const { sequelize } = require("../db/models");
 const validFile = require('../middlewares/validate_file');
+const {verify } = require("../helpers/jwt-auth")
+const { Op } = require("sequelize");
 // const ujiansubmission = require('../db/models/ujiansubmission');
 
 //db
 const Guru = db.Guru
 const murid = db.Murid
 const pertemuan = db.Pertemuan
+const PertemuanFile = db.PertemuanFile
 const absensi = db.Absensi
 const ujianSubmit = db.UjianSubmission
 const Tagihan = db.Tagihan
@@ -22,95 +25,178 @@ const tugasSubmit = db.TugasSubmission
 
 
 class Murid {
-    static async cekMurid(id, pass) {
-        let cek = await sequelize.query(`
-            SELECT * FROM murid INNER JOIN users ON murid.id_user = users.id 
-            WHERE murid.id = '${id}' AND users.password = '${pass}'
-        `)
-        return cek[1].rowCount == true
-    }
-    // ambil materi pertemuan
-    static async getPertemuan(req, res, next) {
-        try {
-            //validasi
-            if (!(req.body.id && req.body.password && await Murid.cekMurid(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
+    static async dataUjian(req, res, next){
+        try {            
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != "murid") throw 'anda bukan murid'
 
-            //ambil data absensi
-            let dataAbsen = await sequelize.query(`
+            //ambil data
+            const dataUjian = (await sequelize.query(`
                 SELECT 
-                    pertemuan.name AS materi,
-                    pertemuan.ket, 
-                    pertemuan.file, 
-                    pertemuan.date, 
-                    absensi.id_pertemuan as absen, 
-                    murid.id, 
-                    pertemuan.id
-                FROM 
-                    murid INNER JOIN pertemuan ON murid.id_batch = pertemuan.id_batch AND murid.id = ${req.body.id}
-                    LEFT JOIN absensi ON absensi.id_pertemuan = pertemuan.id
-                ORDER BY pertemuan.date DESC
-            `)
-
-            // mengubah file
-            for (let i = 0; i < dataAbsen[0].length; i++) {
-                if (dataAbsen[0][i].absen == null) {
-                    dataAbsen[0][i].file = null
+                    ujian.id,
+                    ujian.name,
+                    ujian.pengawas,
+                    ujian_submission.score,
+                    ujian_submission.id_ujian
+                from
+                    murid inner join ujian on murid.id_batch = ujian.id_batch and murid.id = ${token.id_murid}
+                    left join ujian_submission ON murid.id = ujian_submission.id_murid and ujian.id = ujian_submission.id_ujian 
+            `))[0]
+            // mencari peringkat ujian
+            for (let i = 0; i < dataUjian.length; i++) {
+                dataUjian[i].peringkat = null
+                const peringkat = await UjianSubmission.findAll({attributes:['score', 'id_murid'],order:[['score', 'DESC']], where:{id_ujian: dataUjian[i].id_ujian}})
+                for (let x = 0; x < peringkat.length; x++) {
+                    if(peringkat[x].id_murid == token.id_murid) dataUjian[i].peringkat = x+1
                 }
             }
-            res.json(['berhasil', dataAbsen[0]])
+            
+            res.json({
+                success: true,
+                message: 'menampilkan daftar ujian',
+                data: dataUjian
+            })
         } catch (error) {
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async dataAbsenMateri(req, res, next){
+        try {            
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != "murid") throw 'anda bukan murid'
+
+            //ambil data
+            const dataAbsen = (await sequelize.query(`
+                SELECT 
+                    pertemuan.name,
+                    pertemuan.ket,
+                    pertemuan.date,
+                    absensi.id_murid,
+                    absensi.id_pertemuan
+                FROM
+                    murid INNER JOIN pertemuan on murid.id_batch = pertemuan.id_batch AND murid.id = ${token.id_murid}
+                    LEFT JOIN absensi on absensi.id_pertemuan = pertemuan.id 
+            `))[0]
+            for (let i = 0; i < dataAbsen.length; i++) {
+                dataAbsen[i].file = []
+                if(!dataAbsen[i].id_murid) continue
+                dataAbsen[i].file.push(await PertemuanFile.findAll({where:{id_pertemuan:dataAbsen[i].id_pertemuan}}))
+            }
+            
+            res.json({
+                success: true,
+                message: 'menampilkan daftar absensi',
+                data: dataAbsen
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async listBatch(req, res, next){
+        try {
+            //get batch
+            const result = await Batch.findAll({where:{start_date:{[Op.gt]: new Date()} }})
+
+            res.json({
+                success: true,
+                message: 'daftar batch',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async addBatch(req, res, next){
+        try {
+            //input
+            let id = req.params.id
+            if(!id) throw 'masukkan id batch'
+
+            //ambil token
+            const token = verify(req.headers.token)
+
+            let cek = await murid.findOne({where:{id:token.id_murid}})
+            console.log(cek)
+            if(!cek) throw 'acount tidak ditemukan'
+            if(!(cek.status == 'belum mendaftar' && cek.status == 'mendaftar')){
+                if(cek.status == 'terdaftar') throw 'anda sudah mendaftar pada batch lain'
+                if(cek.status == 'alumni' || cek.status == 'keluar') throw 'anda tidak bisa masuk batch kembali'
+            }
+
+            //update status murid
+            const result = await murid.update({status: 'mendaftar', id_batch: id}, {where:{id: token.id_murid}})
+
+            res.json({
+                success: true,
+                message: 'berhasil menambahkan batch',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
     static async addTugas(req, res, next) {
         try {
-            //validasi
-            if (!(req.body.id && req.body.password && await Murid.cekMurid(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
-            if(!(req.body.tugas && req.body.link)) throw ApiError.badRequest("data tidak lengkap")
-            if((await sequelize.query(`
-                SELECT * 
-                FROM 
-                    tugas inner join pertemuan on tugas.id_pertemuan = pertemuan.id and tugas.id = ${req.body.tugas}
-                    inner join murid on murid.id_batch = pertemuan.id_batch and murid.id = ${req.body.id} and murid.status = 'terdaftar'
-            `))[1].rowCount == 0) throw ApiError.badRequest("data tidak valid")
+            //input
+            let id = req.params.id
+            if(!id) throw 'masukkan id tugas'
+            if(!(req.body.link)) throw ApiError.badRequest("data tidak lengkap")
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'murid') throw 'anda bukan murid'
 
             //proses kirim ujian
-            tugasSubmit.create({
-                id_tugas: req.body.tugas,
+            const result = tugasSubmit.create({
+                id_tugas: id,
                 id_murid: req.body.id,
                 submit_date: new Date(),
                 submit_link: req.body.link
             })
-
-            res.json('berhasil')
+            
+            res.json({
+                success: true,
+                message: 'berhasil mengirim tugas',
+                data: result
+            })
         } catch (error) {
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
     static async addUjian(req, res, next) {
         try {
-            //validasi
-            if (!(req.body.id && req.body.password && await Murid.cekMurid(req.body.id, req.body.password))) throw ApiError.badRequest("terdapat kesalahan data")
-            if(!(req.body.ujian && req.body.link)) throw ApiError.badRequest("data tidak lengkap")
-            if((await sequelize.query(`
-                SELECT * 
-                FROM ujian INNER JOIN murid ON ujian.id_batch = murid.id_batch AND ujian.id = '${req.body.ujian}' AND murid.id = '${req.body.id}' AND murid.status = 'terdaftar' AND ujian.date + ujian.time >= now()
-            `))[1].rowCount == 0) throw ApiError.badRequest("data tidak valid")
+            //input
+            let id = req.params.id
+            if(!id) throw 'masukkan id ujian'
+            if(!(req.body.link)) throw ApiError.badRequest("data tidak lengkap")
 
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'murid') throw 'anda bukan murid'
+            
             //proses kirim ujian
-            ujianSubmit.create({
-                id_ujian: req.body.ujian,
-                id_murid: req.body.id,
+            const result = ujianSubmit.create({
+                id_ujian: id,
+                id_murid: token.id_murid,
                 submit_date: new Date(),
                 submit_link: req.body.link
             })
 
-            res.json('berhasil')
+            res.json({
+                success: true,
+                message: 'berhasil mengirim ujian',
+                data: result
+            })
         } catch (error) {
             console.log(error)
-            res.status(400).json(['terjadi error', error])
+            res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
 

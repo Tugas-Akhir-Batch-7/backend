@@ -32,9 +32,6 @@ module.exports = {
       ket: {
         type: Sequelize.STRING
       },
-      file: {
-        type: Sequelize.JSON
-      },
       date: {
         type: Sequelize.DATE,
         defaultValue: Sequelize.NOW
