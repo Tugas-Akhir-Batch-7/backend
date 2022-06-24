@@ -288,7 +288,7 @@ class Guru{
                 FROM 
                     pertemuan inner join guru on guru.id = pertemuan.id_guru  
                     inner join batch on batch.id = pertemuan.id_batch
-                where guru.id = 1 or batch.id_guru = 1
+                where guru.id = '${token.id_guru}' or batch.id_guru = '${token.id_guru}'
             `)
             // let data = await sequelize.query(`
             //     SELECT 
