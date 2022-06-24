@@ -84,12 +84,24 @@ class Guru{
             const token = verify(req.headers.token)
 
             //get anggota batch
-            const result = await murid.findAll({where:{id_batch:id}})
+            const data = (await sequelize.query(`
+                SELECT
+                    murid.id AS id_murid,
+                    murid.id_user,
+                    users.name,
+                    users.email,
+                    murid.address,
+                    murid.contact,
+                    murid.status
+                FROM 
+                    murid INNER JOIN users ON murid.id_user = users.id AND murid.id_batch = ${id} AND (murid.status = 'terdaftar' OR murid.status = 'mendaftar' OR murid.status = 'alumni' OR murid.status = 'keluar')
+            `))[0]
+            // const result = await murid.findAll({where:{id_batch:id}})
 
             res.json({
                 success: true,
                 message: 'berhasil menambahkan batch',
-                data: result
+                data
             })
         } catch (error) {
             console.log(error)
@@ -269,12 +281,28 @@ class Guru{
                     pertemuan.ket AS "keterangan",
                     pertemuan.date AS "date",
                     guru.id AS "id guru",
+                    pertemuan.id_guru AS "id_guru_pertemuan",
+                    batch.id_guru AS "id_guru_batch",
                     batch.id AS "id batch",
                     pertemuan.id AS "id_pertemuan"
                 FROM 
-                    guru INNER JOIN batch ON guru.id = batch.id_guru AND guru.id = '${token.id_guru}' 
-                    INNER JOIN pertemuan ON batch.id = pertemuan.id_batch
+                    pertemuan inner join guru on guru.id = pertemuan.id_guru  
+                    inner join batch on batch.id = pertemuan.id_batch
+                where guru.id = '${token.id_guru}' or batch.id_guru = '${token.id_guru}'
             `)
+            // let data = await sequelize.query(`
+            //     SELECT 
+            //         batch.name AS "name_batch",
+            //         pertemuan.name AS "name_pertemuan",
+            //         pertemuan.ket AS "keterangan",
+            //         pertemuan.date AS "date",
+            //         guru.id AS "id guru",
+            //         batch.id AS "id batch",
+            //         pertemuan.id AS "id_pertemuan"
+            //     FROM 
+            //         guru INNER JOIN batch ON guru.id = batch.id_guru AND guru.id = '${token.id_guru}' 
+            //         INNER JOIN pertemuan ON batch.id = pertemuan.id_batch
+            // `)
             
             res.json({
                 success: true,
