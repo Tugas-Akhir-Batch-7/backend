@@ -272,6 +272,7 @@ class Guru{
         try {
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'anda tidak memiliki akses'
 
             //ambil data
             let data = await sequelize.query(`
@@ -283,11 +284,14 @@ class Guru{
                     guru.id AS "id guru",
                     pertemuan.id_guru AS "id_guru_pertemuan",
                     batch.id_guru AS "id_guru_batch",
-                    batch.id AS "id batch",
-                    pertemuan.id AS "id_pertemuan"
+                    batch.id AS "id_batch",
+                    pertemuan.id_batch as "id_batch_pertemuan",
+                    pertemuan.id AS "id_pertemuan", 
+                    users.name as "name_guru"
                 FROM 
                     pertemuan inner join guru on guru.id = pertemuan.id_guru  
                     inner join batch on batch.id = pertemuan.id_batch
+                    inner join users on guru.id_user  = users.id
                 where guru.id = '${token.id_guru}' or batch.id_guru = '${token.id_guru}'
             `)
             // let data = await sequelize.query(`
@@ -752,11 +756,13 @@ class Guru{
                     murid.status,
                     users.name,
                     users.email,
-                    absensi.id AS id_absen
+                    absensi.id AS id_absen,
+                    pertemuan.id as id_pertemuan
                 FROM
                     pertemuan INNER JOIN murid ON pertemuan.id_batch = murid.id_batch AND pertemuan.id = ${id} AND murid.status = 'terdaftar'
                     INNER JOIN users ON users.id = murid.id_user
-                    LEFT JOIN absensi ON absensi.id_murid = murid.id
+                    LEFT JOIN absensi ON absensi.id_murid = murid.id and absensi.id_pertemuan = ${id}
+                WHERE pertemuan.id = ${id}
             `))[0] || null
             
             res.json({
