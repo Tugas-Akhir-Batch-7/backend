@@ -632,7 +632,7 @@ class Guru{
                 throw 'tugas tidak ada'
             }else if(resPer.id_guru != token.id_guru){ //cek pengajar pertemuan
                 //cek penanggunga jawab batch
-                if(!await batch.findOne({where:{id: resPer[0][0].id_batch, id_guru: token.id_guru}})) throw 'tidak memiliki akses'
+                // if(!await batch.findOne({where:{id: resPer[0][0].id_batch, id_guru: token.id_guru}})) throw 'tidak memiliki akses'
             }
 
             //input
@@ -709,9 +709,13 @@ class Guru{
                     tugas_submission.id_murid,
                     tugas_submission.score,
                     tugas_submission.submit_date,
-                    tugas_submission.submit_link
+                    tugas_submission.submit_link,
+                    users."name"
                 FROM
                     tugas INNER JOIN tugas_submission ON tugas.id = tugas_submission.id_tugas AND id_tugas = ${id}
+                    INNER JOIN murid ON tugas_submission.id_murid = murid.id
+                    INNER JOIN users ON murid.id_user = users.id
+                order by submit_date desc
             `))[0] || null
             
             res.json({
@@ -857,11 +861,16 @@ class Guru{
             const token = verify(req.headers.token)
             if(token.role != 'guru') throw 'tidak memiliki akses'
 
-            //ambil data
-            let data = await ujian.findAll({
-                attributes:['id','id_batch', 'pengawas', 'name', 'date', 'time'],
-                where:{id_batch:id}
-            }) || null
+            //ambil dataTO_CHAR(NOW(), 'dd-mm-YYYY hh24-mi')            
+            let data = (await sequelize.query(`
+                SELECT id, id_batch, pengawas, name, date, time, CONCAT(TO_CHAR(date, 'YYYY-MM-DD'),'T', TO_CHAR(date, 'HH24:MI')) AS datetime
+                FROM ujian 
+                WHERE id_batch = ${id} 
+            `))[0] || null
+            // let data = await ujian.findAll({
+            //     attributes:['id','id_batch', 'pengawas', 'name', 'date', 'time'],
+            //     where:{id_batch:id}
+            // }) || null
             
             res.json({
                 success: true,
@@ -946,10 +955,12 @@ class Guru{
                     ujian_submission.score, 
                     ujian_submission.submit_link, 
                     ujian_submission.submit_date, 
-                    ujian_submission.id AS "id ujian submit", 
+                    ujian_submission.id AS "id", 
+                    ujian_submission.id_ujian AS "id_ujian", 
                     murid.id AS "id murid"
                 FROM murid INNER JOIN ujian_submission ON murid.id = ujian_submission.id_murid AND ujian_submission.id_ujian = '${id}' 
                 INNER JOIN users ON users.id = murid.id_user
+                order by submit_date desc
             `))[0] || null
             
             res.json({
