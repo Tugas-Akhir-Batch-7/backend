@@ -59,6 +59,7 @@ class Guru{
         try {
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //get batch
             const result = await batch.findAll({where:{id_guru:token.id_guru}})
@@ -82,6 +83,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //get anggota batch
             const data = (await sequelize.query(`
@@ -117,6 +119,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //update status murid
             const result = await murid.update({status: 'terdaftar'}, {where:{status: 'mendaftar', id}})
@@ -139,6 +142,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil input
             let data = {}
@@ -169,6 +173,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil input
             const id = req.params.id
@@ -197,6 +202,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
             if(!await batch.findOne({where:{id_guru:token.id_guru, id: req.params.id}})) throw 'bukan batch anda'
             
             //pertemuan
@@ -323,6 +329,7 @@ class Guru{
         try {
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil data
             let data = await sequelize.query(`
@@ -356,6 +363,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil input
             let data = {}
@@ -390,6 +398,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil input
             const id = req.params.id
@@ -418,6 +427,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil data
             let data = await pertemuanFile.findAll({where:{id_pertemuan:id}})
@@ -447,6 +457,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //proses
             let data = []
@@ -484,6 +495,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
             
             //data
             let data = {}
@@ -511,6 +523,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil input
             const id = req.params.id
@@ -539,6 +552,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil data
             let data = (await sequelize.query(`
@@ -569,7 +583,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
-            if(token.role != 'guru') throw 'tidak memiliki akses untuk menambah tugas'
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //cek tugas
             if(!(tugasName && tugasDescription)) throw 'data tidak lengkap'
@@ -607,6 +621,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //cek
             let resPer = await sequelize.query(`
@@ -648,6 +663,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //cek
             let resPer = await sequelize.query(`
@@ -658,7 +674,7 @@ class Guru{
                 throw 'tugas tidak ada'
             }else if(resPer.id_guru != token.id_guru){ //cek pengajar pertemuan
                 //cek penanggunga jawab batch
-                if(!await batch.findOne({where:{id: resPer[0][0].id_batch, id_guru: token.id_guru}})) throw 'tidak memiliki akses'
+                // if(!await batch.findOne({where:{id: resPer[0][0].id_batch, id_guru: token.id_guru}})) throw 'tidak memiliki akses'
             }
 
             //delete tugas
@@ -683,6 +699,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil data
             let data = (await sequelize.query(`
@@ -716,6 +733,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             let input = req.body
             let data = []
@@ -746,6 +764,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil data
             let dataAbsen = (await sequelize.query(`
@@ -784,6 +803,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //cek
             let resPer = await pertemuan.findOne({where:{id}})
@@ -835,6 +855,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil data
             let data = await ujian.findAll({
@@ -861,7 +882,7 @@ class Guru{
 
             //ambil token
             const token = verify(req.headers.token)
-            if(token.role != 'guru') throw 'anda bukan guru'
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //input
             let data = {}
@@ -916,6 +937,7 @@ class Guru{
             
             //ambil token
             const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //ambil data
             let data = (await sequelize.query(`
