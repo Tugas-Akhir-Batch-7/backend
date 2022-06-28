@@ -27,6 +27,8 @@ if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
 
+app.use(express.static('public')) //mengijinkan akses ke seluruh file yang ada didalam folder public
+
 // const routers = require('./routes'); // mengarah ke index.js di folder routes
 
 app.use(express.json());
