@@ -62,7 +62,11 @@ class Guru{
             if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //get batch
-            const result = await batch.findAll({where:{id_guru:token.id_guru}})
+            // const result = await batch.findAll({where:{id_guru:token.id_guru}})
+            const result = (await sequelize.query(`
+                SELECT *, TO_CHAR(start_date, 'YYYY-MM-DD') AS date
+                FROM batch WHERE id_guru = ${token.id_guru} ORDER BY start_date DESC`
+            ))[0]
 
             res.json({
                 success: true,
@@ -866,11 +870,45 @@ class Guru{
                 SELECT id, id_batch, pengawas, name, date, time, CONCAT(TO_CHAR(date, 'YYYY-MM-DD'),'T', TO_CHAR(date, 'HH24:MI')) AS datetime
                 FROM ujian 
                 WHERE id_batch = ${id} 
+                order by date desc
             `))[0] || null
             // let data = await ujian.findAll({
             //     attributes:['id','id_batch', 'pengawas', 'name', 'date', 'time'],
             //     where:{id_batch:id}
             // }) || null
+            
+            res.json({
+                success: true,
+                message: 'menampilkan daftar petemuan',
+                data
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    //list ujian per guru / user
+    static async listUjianGuru(req, res, next){
+        try {            
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
+
+            //ambil dataTO_CHAR(NOW(), 'dd-mm-YYYY hh24-mi')            
+            let data = (await sequelize.query(`
+            SELECT 
+                ujian.id as id, 
+                id_batch, 
+                pengawas, 
+                ujian.name, 
+                date, 
+                time, 
+                CONCAT(TO_CHAR(date, 'YYYY-MM-DD'),'T', TO_CHAR(date, 'HH24:MI')) AS datetime,
+                batch.name as name_batch
+            FROM 
+                ujian inner join batch on ujian.id_batch = batch.id and batch.id_guru = ${token.id_guru}
+            order by date desc
+            `))[0] || null
             
             res.json({
                 success: true,

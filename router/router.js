@@ -64,6 +64,7 @@ router.post('/guru/prosesAbsensi/:id', guru.prosesAbsensi)
 //ujian
 router.post('/guru/addUjian/:id', guru.addUjian)
 router.get('/guru/listUjian/:id', guru.listUjian)
+router.get('/guru/listUjianGuru', guru.listUjianGuru)
 router.get('/guru/listUjianSubmit/:id', guru.listUjianSubmit)
 router.put('/guru/updateUjian/:id', guru.updateUjian)
 router.delete('/guru/deleteUjian/:id', guru.deleteUjian)
