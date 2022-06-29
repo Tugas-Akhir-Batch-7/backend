@@ -51,10 +51,32 @@ const getAllByRole = async (req, res, next) => {
 
 const getAllMurid = async (req, res, next) => {
     try {
-        const murids = await Murid.findAll({ include: User })
+        let murids
+        let responseMessage
+        if (req.query.status) {
+            murids = await sequelize.query(
+                `
+                SELECT murid.id, users.name from murid
+                JOIN users ON murid.id_user = users.id
+                WHERE status= :status
+                `,
+                {
+                    replacements: {
+                        status: req.query.status
+                    }
+                }
+            )
+            murids = murids[0]
+            responseMessage = `success get all murid status ${req.query.status}`
+
+        } else {
+            murids = await Murid.findAll({ include: User })
+            responseMessage = `success get all murid`
+
+        }
         res.status(200).json({
             success: true,
-            message: 'success get all murid',
+            message: responseMessage,
             data: murids
         })
 
