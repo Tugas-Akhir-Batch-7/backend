@@ -59,10 +59,12 @@ class User {
                 const isPassword = bcrypt.compareSync(password, userGet.password);
                 // console.log(isPassword)
                 if (isPassword) {
-                    userGet.password = undefined;
+                    const dataResponse = await User.profileLoginHelper(userGet.id)
+                    // console.log(dataResponse[0][0]);
+                    // dataResponse.password = undefined;
                     const payload = {
                         id: userGet.id,
-                        [`id_${userGet.role}`] :(await sequelize.query(`SELECT id FROM ${userGet.role} WHERE id_user = ${userGet.id}`))[0][0].id,
+                        [`id_${userGet.role}`]: (await sequelize.query(`SELECT id FROM ${userGet.role} WHERE id_user = ${userGet.id}`))[0][0].id,
                         name: userGet.name,
                         email: userGet.email,
                         role: userGet.role,
@@ -72,7 +74,7 @@ class User {
                     return res.status(200).json({
                         success: true,
                         message: 'login berhasil',
-                        data: userGet,
+                        data: dataResponse,
                         token: token,
                         // cobaVerify
                     })
@@ -89,43 +91,43 @@ class User {
         const t = await sequelize.transaction();
         try {
             //variabel
-            const {name, email, otp} = req.body;
+            const { name, email, otp } = req.body;
             const role = req.body.role || 'murid'
             let resUser, resRole, profile
-            
+
             //validasi
             if (!(name && req.body.password && email && otp)) throw 'masukkan semua data'
             //cek otp
-            if(!(await otpRegistrasi.findOne({where: {otp , email, role}}))) throw 'otp tidak valid'
-            
+            if (!(await otpRegistrasi.findOne({ where: { otp, email, role } }))) throw 'otp tidak valid'
+
             //process
             //encript password
             const password = bcrypt.hashSync(req.body.password, 10)
             //image process profile
-            req.files.profile ? 
+            req.files.profile ?
                 profile = await validFile.validProfile(req.files.profile[0]) :
                 profile = 'default.png'
 
-            
+
             if (role == 'murid') {
                 //variabel
-                const {address, contact, birthday} = req.body
-                
+                const { address, contact, birthday } = req.body
+
                 //proses
-                if(!(address && contact && birthday)) throw 'masukkan semua data murid'
+                if (!(address && contact && birthday)) throw 'masukkan semua data murid'
                 //image process ktp
-                if(!req.files.ktp) throw 'masukkan ktp'
+                if (!req.files.ktp) throw 'masukkan ktp'
                 let ktp = await validFile.validKtp(req.files.ktp[0])
                 //kirim user
-                resUser = await user.create({name, email, password, role, email_verified_at: new Date(), photo: profile }, { transaction: t })
+                resUser = await user.create({ name, email, password, role, email_verified_at: new Date(), photo: profile }, { transaction: t })
 
                 //kirim murid
-                resRole = await murid.create({ 
-                    id_user: resUser.id, 
-                    photo_ktp: ktp, 
-                    address, 
-                    contact, 
-                    birthday_date: birthday 
+                resRole = await murid.create({
+                    id_user: resUser.id,
+                    photo_ktp: ktp,
+                    address,
+                    contact,
+                    birthday_date: birthday
                 }, { transaction: t })
             } else if (role == 'admin' || role == 'guru') {
                 resUser = await user.create({ name, email, password, role, photo: profile }, { transaction: t })
@@ -133,19 +135,19 @@ class User {
                     resRole = await admin.create({ id_user: resUser.id }, { transaction: t }) :
                     resRole = await guru.create({ id_user: resUser.id }, { transaction: t })
             }
-            
+
             //hapus otp
-            await otpRegistrasi.destroy({where: {email: resUser.email}})
-            
+            await otpRegistrasi.destroy({ where: { email: resUser.email } })
+
             await t.commit()
-            
+
             res.json({
                 success: true,
                 message: 'login berhasil',
                 data: resUser,
                 token: generateToken({
                     id: resUser.id,
-                    [`id_${resUser.role}`]:resRole.id,
+                    [`id_${resUser.role}`]: resRole.id,
                     name: resUser.name,
                     email: resUser.email,
                     role: resUser.role,
@@ -180,7 +182,7 @@ class User {
                     break;
                 case 'guru':
                     if (!usernameAdmin) throw 'masukkan username admin untuk menerima otp'
-                    if (!(emailOtp = (await user.findOne({where: { name: usernameAdmin, role: 'admin' }})))) throw 'username admin tidak ada'
+                    if (!(emailOtp = (await user.findOne({ where: { name: usernameAdmin, role: 'admin' } })))) throw 'username admin tidak ada'
                     emailOtp = emailOtp.email
                     break;
                 case 'murid':
@@ -232,7 +234,7 @@ class User {
 
             res.json({
                 success: true,
-                message:'otp berhasil dikirim'
+                message: 'otp berhasil dikirim'
             })
         } catch (error) {
             // next(error)
@@ -285,12 +287,12 @@ class User {
             })
         } catch (error) {
             console.log(error)
-            res.status(400).json({ success: false, message:'terjadi error', error})
+            res.status(400).json({ success: false, message: 'terjadi error', error })
         }
     }
     static async validResetOtp(req, res, next) {
         try {
-            if(!req.body.otp) throw 'masukkan otp'
+            if (!req.body.otp) throw 'masukkan otp'
 
             //ambil token
             const token = verify(req.headers.token)
@@ -303,23 +305,23 @@ class User {
             })
         } catch (error) {
             console.log(error)
-            res.status(400).json({ success: false, message:'terjadi error', error})
+            res.status(400).json({ success: false, message: 'terjadi error', error })
         }
     }
     static async resetPassword(req, res, next) {
         try {
-            let {otp, password} = req.body
-            if(!(otp && password)) throw 'masukkan otp dan password'
+            let { otp, password } = req.body
+            if (!(otp && password)) throw 'masukkan otp dan password'
 
             //ambil token
             const token = verify(req.headers.token)
-            const {id, role, email} = token
+            const { id, role, email } = token
 
             //verifikasi lebih lanjut
-            if (!(await totp.findOne({ where: {id_user: id, otp}}))) throw 'otp atau id salah'
+            if (!(await totp.findOne({ where: { id_user: id, otp } }))) throw 'otp atau id salah'
 
             //mengubah password
-            await user.update({password: bcrypt.hashSync(password, 10)}, {where: {id}})
+            await user.update({ password: bcrypt.hashSync(password, 10) }, { where: { id } })
 
             //menghapus data otp jika sudah register
             // await totp.destroy({where: {id_user: id}})
@@ -337,12 +339,12 @@ class User {
 
             res.json({
                 success: true,
-                message: 'password berhasil diganti', 
+                message: 'password berhasil diganti',
                 token: tokenRes
             })
         } catch (error) {
             console.log(error)
-            res.status(400).json({ success: false, message:'terjadi error', error})
+            res.status(400).json({ success: false, message: 'terjadi error', error })
         }
     }
     static async profile(req, res, next) {
@@ -454,7 +456,7 @@ class User {
             // userGet = userGet.toJSON()
             // userGet.profile = profile
             // userGet.password = undefined
-            
+
             // console.log(userUpdated)
             t.commit()
             return res.status(200).json({
@@ -468,6 +470,35 @@ class User {
             t.rollback()
             next(error)
         }
+    }
+
+    static async profileLoginHelper(userId) {
+        try {
+            let userGet = await user.findByPk(userId)
+            if (userGet.role === 'murid') {
+                userGet = await sequelize.query(`
+                SELECT u.name, u.id, u.email, u.photo, u.role, b.name as "nama_batch" FROM users as u 
+                JOIN murid as m ON m.id_user=u.id
+                JOIN batch as b ON b.id = m.id_batch
+                WHERE u.id = :id;
+                `,
+                    {
+                        replacements: { id: userId },
+                    }
+                )
+                userGet = userGet[0][0]
+                // console.log(userGet)
+                return userGet
+            }
+            userGet = userGet.toJSON()
+            return userGet
+            // console.log(userComplete)
+
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
+
     }
 
 }
