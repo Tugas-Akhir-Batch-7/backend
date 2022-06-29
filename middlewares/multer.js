@@ -10,9 +10,9 @@ const storage = multer.diskStorage({
       cb(null, new Date().getTime() + '-' +file.originalname)
     }
 })
-const multerImg = multer({ storage: storage }).fields([
+const Multer = multer({ storage: storage }).fields([
     {name: 'profile', maxCount: 1}, 
     {name: 'ktp', maxCount: 1}, 
-    {name: 'file', maxCount: 10}
+    {name: 'file'}
 ])
-module.exports = multerImg
+module.exports = Multer

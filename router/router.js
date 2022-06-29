@@ -29,6 +29,9 @@ router.post('/validResetOtp', user.validResetOtp)
 router.post('/resetPassword', user.resetPassword)
 
 //guru
+router.get('/guru/listGuru', guru.listGuru)
+
+//batch
 router.post('/guru/addBatch', guru.addBatch)
 router.get('/guru/listBatch', guru.listBatch)
 router.get('/guru/listAnggotaBatch/:id', guru.listAnggotaBatch)
@@ -37,7 +40,7 @@ router.put('/guru/updateBatch/:id', guru.updateBatch)
 router.delete('/guru/deleteBatch/:id', guru.deleteBatch)
 
 //pertemuan
-router.post('/guru/addPertemuan/', multer, guru.addPertemuan)
+router.post('/guru/addPertemuan/:id', multer, guru.addPertemuan)
 router.get('/guru/listPertemuan', guru.listPertemuan)
 router.get('/guru/listJadwalPertemuan', guru.listJadwalPertemuan) 
 router.put('/guru/updatePertemuan/:id', guru.updatePertemuan)

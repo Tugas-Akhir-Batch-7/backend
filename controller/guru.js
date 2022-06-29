@@ -25,6 +25,29 @@ class Guru{
         `)
         return cek[1].rowCount == true
     }
+    //daftar guru
+    static async listGuru(req, res, next){
+        try {
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
+
+            //get guru
+            const result = (await sequelize.query(`
+                SELECT guru.id, guru.id_user, users."name" 
+                FROM users INNER JOIN guru ON users.id = guru.id_user
+            `))[0]
+
+            res.json({
+                success: true,
+                message: 'daftar guru',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
     //batch
     //menambah batch
     static async addBatch(req, res, next){
@@ -63,6 +86,10 @@ class Guru{
 
             //get batch
             // const result = await batch.findAll({where:{id_guru:token.id_guru}})
+            // const result = (await sequelize.query(`
+            //     SELECT *, TO_CHAR(start_date, 'YYYY-MM-DD') AS date
+            //     FROM batch ORDER BY start_date DESC`
+            // ))[0]
             const result = (await sequelize.query(`
                 SELECT *, TO_CHAR(start_date, 'YYYY-MM-DD') AS date
                 FROM batch WHERE id_guru = ${token.id_guru} ORDER BY start_date DESC`
@@ -297,12 +324,14 @@ class Guru{
                     batch.id AS "id_batch",
                     pertemuan.id_batch as "id_batch_pertemuan",
                     pertemuan.id AS "id_pertemuan", 
-                    users.name as "name_guru"
+                    users.name as "name_guru",
+                    CONCAT(TO_CHAR(pertemuan.date, 'YYYY-MM-DD'),'T', TO_CHAR(pertemuan.date, 'HH24:MI')) AS datetime
                 FROM 
                     pertemuan inner join guru on guru.id = pertemuan.id_guru  
                     inner join batch on batch.id = pertemuan.id_batch
                     inner join users on guru.id_user  = users.id
                 where guru.id = '${token.id_guru}' or batch.id_guru = '${token.id_guru}'
+                ORDER BY date DESC
             `)
             // let data = await sequelize.query(`
             //     SELECT 
@@ -372,17 +401,15 @@ class Guru{
             //ambil input
             let data = {}
             const id = req.params.id
-            const {name, ket, pengajar, date} = req.body
+            const {batch, name, ket, pengajar, date} = req.body
+            pengajar ? data.id_guru = pengajar : false
+            batch ? data.id_batch = batch : false
             name ? data.name = name : false
             ket ? data.ket = ket : false
-            pengajar ? data.pengajar = pengajar : false
             date ? data.date = date : false
 
             //update pertemuan
-            const result = await pertemuan.update(data, {where: {id, [Op.or]:[
-                {id_guru: token.id_guru}
-
-            ]}})
+            const result = await pertemuan.update(data, {where: {id}})
 
             res.json({
                 success: true,
@@ -453,11 +480,13 @@ class Guru{
             let file = req.files.file || null
             let ketFile = req.body.ketFile || []
             let id = req.params.id
+            console.log(file)
 
             //validasi
             if(!file) throw 'tidak ada file'
             if(!id) throw "masukkan id pertemuan"
-            if(!Array.isArray(ketFile)) ketFile = []
+            if(!Array.isArray(ketFile)) ketFile = [ketFile]
+            console.log(ketFile)
             
             //ambil token
             const token = verify(req.headers.token)
