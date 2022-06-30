@@ -107,7 +107,7 @@ const getAllTagihan = async (req, res, next) => {
 
         // })
         let tagihan = await sequelize.query(`
-        SELECT u."name", tagihan.total_bill, tagihan.dp, tagihan.is_lunas FROM tagihan
+        SELECT tagihan.id, u."name", tagihan.total_bill, tagihan.dp, tagihan.is_lunas FROM tagihan
         JOIN murid as m ON tagihan.id_murid = m.id
         JOIN users as u ON m.id_user = u.id
 ;
@@ -127,13 +127,26 @@ const getAllTagihan = async (req, res, next) => {
 const detailTagihan = async (req, res, next) => {
     try {
         const { id } = req.params
-        const tagihan = await Tagihan.findOne({
-            where: {
+        // const tagihan = await Tagihan.findOne({
+        //     where: {
+        //         id: id
+        //     }
+        // })
+        let tagihan = await sequelize.query(`
+        SELECT t.id, total_bill, t.is_lunas, t.dp, users."name", batch."name" as "batch_name"
+        FROM tagihan as t
+        JOIN murid ON t.id_murid = murid.id
+        JOIN users ON murid.id_user = users.id
+        JOIN batch ON murid.id_batch = batch.id
+        WHERE t.id = :id
+        `, {
+            replacements: {
                 id: id
             }
         })
+        // console.log(tagihan)
         if (!tagihan) throw ApiError.badRequest('Tagihan not found')
-
+        tagihan = tagihan[0][0]
         res.status(200).json({
             success: true,
             message: 'success get tagihan',
@@ -268,7 +281,7 @@ const updateTagihan = async (req, res, next) => {
     }
 }
 
-const getAllPembayaran = async (req, res, next) => {
+const getPembayaran = async (req, res, next) => {
     try {
         // const { id_tagihan } = req.params
         // const pembayaran = await Pembayaran.findAll({
@@ -276,20 +289,43 @@ const getAllPembayaran = async (req, res, next) => {
         //         id_tagihan: id_tagihan
         //     }
         // })
-        let pembayaran = await sequelize.query(`
-        SELECT u."name" as "murid", b."name" as "batch", t.id as "id_tagihan", pemb.amount, pemb."date" FROM pembayaran as pemb
-        JOIN tagihan as t ON pemb.id_tagihan = t.id
-        JOIN murid as m ON t.id_murid = m.id
-        JOIN users as u ON m.id_user = u.id
-        JOIN batch as b ON  m.id_batch = b.id
-        ;
-        `)
-        pembayaran = pembayaran[0]
+        let pembayaran
+        let responseMessage
+        if (req.query.id_tagihan) {
+            pembayaran = await sequelize.query(`
+            SELECT pemb.id, u."name" as "murid", b."name" as "batch", t.id as "id_tagihan", pemb.amount, pemb."date" FROM pembayaran as pemb
+            JOIN tagihan as t ON pemb.id_tagihan = t.id
+            JOIN murid as m ON t.id_murid = m.id
+            JOIN users as u ON m.id_user = u.id
+            JOIN batch as b ON  m.id_batch = b.id
+            WHERE id_tagihan = :id_tagihan
+            ;
+            `,
+                {
+                    replacements: {
+                        id_tagihan: req.query.id_tagihan
+                    }
+                })
+            pembayaran = pembayaran[0]
+            responseMessage = 'success get pembayaran by id_tagihan = ' + req.query.id_tagihan
+        } else {
+            pembayaran = await sequelize.query(`
+            SELECT pemb.id, u."name" as "murid", b."name" as "batch", t.id as "id_tagihan", pemb.amount, pemb."date" FROM pembayaran as pemb
+            JOIN tagihan as t ON pemb.id_tagihan = t.id
+            JOIN murid as m ON t.id_murid = m.id
+            JOIN users as u ON m.id_user = u.id
+            JOIN batch as b ON  m.id_batch = b.id
+            ;
+            `)
+            pembayaran = pembayaran[0]
+            responseMessage = 'success get pembayaran'
+        }
+
         // if (!pembayaran) throw ApiError.badRequest('Pembayaran not found')
 
         res.status(200).json({
             success: true,
-            message: 'success get pembayaran',
+            message: responseMessage,
             data: pembayaran
         })
     } catch (error) {
@@ -354,5 +390,5 @@ module.exports = {
     createTagihan,
     updateTagihan,
     createPembayaran,
-    getAllPembayaran,
+    getPembayaran,
 }
