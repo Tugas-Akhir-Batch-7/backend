@@ -51,10 +51,33 @@ const getAllByRole = async (req, res, next) => {
 
 const getAllMurid = async (req, res, next) => {
     try {
-        const murids = await Murid.findAll({ include: User })
+        let murids
+        let responseMessage
+        if (req.query.status) {
+            murids = await sequelize.query(
+                `
+                SELECT murid.id, users.name, batch.pay from murid
+                JOIN users ON murid.id_user = users.id
+                JOIN batch ON murid.id_batch = batch.id
+                WHERE status='mendaftar'
+                `,
+                {
+                    replacements: {
+                        status: req.query.status
+                    }
+                }
+            )
+            murids = murids[0]
+            responseMessage = `success get all murid status ${req.query.status}`
+
+        } else {
+            murids = await Murid.findAll({ include: User })
+            responseMessage = `success get all murid`
+
+        }
         res.status(200).json({
             success: true,
-            message: 'success get all murid',
+            message: responseMessage,
             data: murids
         })
 
@@ -85,7 +108,7 @@ const getAllTagihan = async (req, res, next) => {
 
         // })
         let tagihan = await sequelize.query(`
-        SELECT u."name", tagihan.total_bill, tagihan.dp, tagihan.is_lunas FROM tagihan
+        SELECT tagihan.id, u."name", tagihan.total_bill, tagihan.dp, tagihan.is_lunas FROM tagihan
         JOIN murid as m ON tagihan.id_murid = m.id
         JOIN users as u ON m.id_user = u.id
 ;
@@ -105,13 +128,26 @@ const getAllTagihan = async (req, res, next) => {
 const detailTagihan = async (req, res, next) => {
     try {
         const { id } = req.params
-        const tagihan = await Tagihan.findOne({
-            where: {
+        // const tagihan = await Tagihan.findOne({
+        //     where: {
+        //         id: id
+        //     }
+        // })
+        let tagihan = await sequelize.query(`
+        SELECT t.id, total_bill, t.is_lunas, t.dp, users."name", batch."name" as "batch_name"
+        FROM tagihan as t
+        JOIN murid ON t.id_murid = murid.id
+        JOIN users ON murid.id_user = users.id
+        JOIN batch ON murid.id_batch = batch.id
+        WHERE t.id = :id
+        `, {
+            replacements: {
                 id: id
             }
         })
+        // console.log(tagihan)
         if (!tagihan) throw ApiError.badRequest('Tagihan not found')
-
+        tagihan = tagihan[0][0]
         res.status(200).json({
             success: true,
             message: 'success get tagihan',
@@ -163,12 +199,13 @@ const createTagihan = async (req, res, next) => {
                 dp: dp,
                 is_lunas: false,
             }, { transaction: t })
-            pembayaran = await Pembayaran.create({
-                id_tagihan: tagihan.id,
-                amount: dp,
-                date: new Date(),
-            }, { transaction: t })
+
         }
+        pembayaran = await Pembayaran.create({
+            id_tagihan: tagihan.id,
+            amount: dp,
+            date: new Date(),
+        }, { transaction: t })
 
         const tagihanJSON = tagihan.toJSON()
         await t.commit()
@@ -246,7 +283,64 @@ const updateTagihan = async (req, res, next) => {
     }
 }
 
-const getAllPembayaran = async (req, res, next) => {
+const getTagihanAndTerbayar = async (req, res, next) => {
+    try {
+        const { id } = req.params
+        let tagihan
+        // let
+        if (id) {
+            tagihan = await sequelize.query(`
+            SELECT tagihan.id, users."name", tagihan.is_lunas, tagihan.total_bill, (SELECT SUM(amount) AS terbayar FROM pembayaran
+            WHERE id_tagihan = 1) terbayar
+            FROM tagihan 
+            JOIN murid ON tagihan.id_murid = murid.id
+            JOIN users ON murid.id_user = users.id
+            WHERE tagihan.id = :id;
+            `,
+                {
+                    replacements: {
+                        id: id
+                    }
+                }
+            )
+            tagihan = tagihan.toJSON()
+        } else {
+            // console.log('masuk else')
+            tagihan = await sequelize.query(`
+            SELECT tagihan.id, users."name", tagihan.is_lunas, tagihan.total_bill, (SELECT SUM(amount) AS terbayar FROM pembayaran
+            WHERE id_tagihan = tagihan.id) terbayar
+            FROM tagihan
+            JOIN murid ON tagihan.id_murid = murid.id
+            JOIN users ON murid.id_user = users.id
+            WHERE tagihan.is_lunas=false;
+            `,
+
+            )
+            tagihan = tagihan[0]
+            tagihan.forEach(tagihan => {
+                tagihan.kekurangan = tagihan.total_bill - tagihan.terbayar
+                // delete tagihan.terbayar
+            })
+        }
+        if (!tagihan) throw ApiError.badRequest('Tagihan not found')
+        // let kekurangan = tagihan.total_bill - tagihan.dp
+        // const tagihanJSON = tagihan.toJSON()
+        res.status(200).json({
+            success: true,
+            message: 'success get tagihan',
+            data: {
+                tagihan: tagihan,
+                // kekurangan: kekurangan
+            }
+        })
+
+    } catch (error) {
+        next(error)
+    }
+
+}
+
+const getPembayaran = async (req, res, next) => {
     try {
         // const { id_tagihan } = req.params
         // const pembayaran = await Pembayaran.findAll({
@@ -254,20 +348,43 @@ const getAllPembayaran = async (req, res, next) => {
         //         id_tagihan: id_tagihan
         //     }
         // })
-        let pembayaran = await sequelize.query(`
-        SELECT u."name" as "murid", b."name" as "batch", t.id as "id_tagihan", pemb.amount, pemb."date" FROM pembayaran as pemb
-        JOIN tagihan as t ON pemb.id_tagihan = t.id
-        JOIN murid as m ON t.id_murid = m.id
-        JOIN users as u ON m.id_user = u.id
-        JOIN batch as b ON  m.id_batch = b.id
-        ;
-        `)
-        pembayaran = pembayaran[0]
+        let pembayaran
+        let responseMessage
+        if (req.query.id_tagihan) {
+            pembayaran = await sequelize.query(`
+            SELECT pemb.id, u."name" as "murid", b."name" as "batch", t.id as "id_tagihan", pemb.amount, pemb."date" FROM pembayaran as pemb
+            JOIN tagihan as t ON pemb.id_tagihan = t.id
+            JOIN murid as m ON t.id_murid = m.id
+            JOIN users as u ON m.id_user = u.id
+            JOIN batch as b ON  m.id_batch = b.id
+            WHERE id_tagihan = :id_tagihan
+            ;
+            `,
+                {
+                    replacements: {
+                        id_tagihan: req.query.id_tagihan
+                    }
+                })
+            pembayaran = pembayaran[0]
+            responseMessage = 'success get pembayaran by id_tagihan = ' + req.query.id_tagihan
+        } else {
+            pembayaran = await sequelize.query(`
+            SELECT pemb.id, u."name" as "murid", b."name" as "batch", t.id as "id_tagihan", pemb.amount, pemb."date" FROM pembayaran as pemb
+            JOIN tagihan as t ON pemb.id_tagihan = t.id
+            JOIN murid as m ON t.id_murid = m.id
+            JOIN users as u ON m.id_user = u.id
+            JOIN batch as b ON  m.id_batch = b.id
+            ;
+            `)
+            pembayaran = pembayaran[0]
+            responseMessage = 'success get pembayaran'
+        }
+
         // if (!pembayaran) throw ApiError.badRequest('Pembayaran not found')
 
         res.status(200).json({
             success: true,
-            message: 'success get pembayaran',
+            message: responseMessage,
             data: pembayaran
         })
     } catch (error) {
@@ -276,7 +393,7 @@ const getAllPembayaran = async (req, res, next) => {
 }
 
 const createPembayaran = async (req, res, next) => {
-    // const t
+    const t = await sequelize.transaction()
     try {
         const { id_tagihan } = req.params
         const { amount } = req.body
@@ -309,8 +426,24 @@ const createPembayaran = async (req, res, next) => {
             date: new Date(),
         }, {
             returning: true,
+            transaction: t
         })
-
+        let updateTagihan
+        if (amount === sisaTagihan) {
+            updateTagihan = await Tagihan.update({
+                is_lunas: true
+            },
+                {
+                    where: {
+                        id: id_tagihan
+                    },
+                    returning: true,
+                    transaction: t
+                }
+            )
+        }
+        console.log(updateTagihan)
+        await t.commit()
         const pembayaranJSON = pembayaran.toJSON()
         return res.status(201).json({
             success: true,
@@ -318,6 +451,7 @@ const createPembayaran = async (req, res, next) => {
             data: pembayaranJSON
         })
     } catch (error) {
+        await t.rollback()
         next(error)
     }
 }
@@ -332,5 +466,6 @@ module.exports = {
     createTagihan,
     updateTagihan,
     createPembayaran,
-    getAllPembayaran,
+    getPembayaran,
+    getTagihanAndTerbayar
 }

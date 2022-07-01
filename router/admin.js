@@ -22,7 +22,8 @@ router.get('/detail-tagihan/:id', adminController.detailTagihan)
 // router.delete('/delete-tagihan/:id', adminController.createTagihan)
 
 router.post('/create-pembayaran/:id_tagihan', adminController.createPembayaran)
-router.get('/list-pembayaran', adminController.getAllPembayaran)
+router.get('/list-pembayaran', adminController.getPembayaran)
+router.get('/list-tagihan-and-terbayar', adminController.getTagihanAndTerbayar)
 
 
 
