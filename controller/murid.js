@@ -18,6 +18,7 @@ const Pembayaran = db.Pembayaran
 const Ujian = db.Ujian
 const Batch = db.Batch
 const User = db.User
+const Tugas = db.Tugas
 const UjianSubmission = db.UjianSubmission
 const tugasSubmit = db.TugasSubmission
 
@@ -37,11 +38,15 @@ class Murid {
                     ujian.id,
                     ujian.name,
                     ujian.pengawas,
+                    ujian.date,
+                    ujian.time,
+                    ujian_submission.submit_link,
                     ujian_submission.score,
                     ujian_submission.id_ujian
                 from
                     murid inner join ujian on murid.id_batch = ujian.id_batch and murid.id = ${token.id_murid}
                     left join ujian_submission ON murid.id = ujian_submission.id_murid and ujian.id = ujian_submission.id_ujian 
+                ORDER BY ujian.date DESC
             `))[0]
             // mencari peringkat ujian
             for (let i = 0; i < dataUjian.length; i++) {
@@ -75,15 +80,20 @@ class Murid {
                     pertemuan.ket,
                     pertemuan.date,
                     absensi.id_murid,
-                    absensi.id_pertemuan
+                    absensi.id_pertemuan,
+                    pertemuan.id
                 FROM
                     murid INNER JOIN pertemuan on murid.id_batch = pertemuan.id_batch AND murid.id = ${token.id_murid}
-                    LEFT JOIN absensi on absensi.id_pertemuan = pertemuan.id 
+                    LEFT JOIN absensi on absensi.id_pertemuan = pertemuan.id And absensi.id_murid = ${token.id_murid}
+                ORDER BY pertemuan.date DESC
             `))[0]
             for (let i = 0; i < dataAbsen.length; i++) {
+                if(new Date(dataAbsen[i].date) > new Date()) continue
+                dataAbsen[i].tugas = []
+                dataAbsen[i].tugas = (await Tugas.findAll({where:{id_pertemuan:dataAbsen[i].id}}))
                 dataAbsen[i].file = []
                 if(!dataAbsen[i].id_murid) continue
-                dataAbsen[i].file.push(await PertemuanFile.findAll({where:{id_pertemuan:dataAbsen[i].id_pertemuan}}))
+                dataAbsen[i].file = (await PertemuanFile.findAll({where:{id_pertemuan:dataAbsen[i].id_pertemuan}}))
             }
             
             res.json({
@@ -141,6 +151,29 @@ class Murid {
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    static async listTugasSubmit(req, res, next){
+        try {
+            //input
+            let id = req.params.id
+            if(!id) throw 'masukkan id tugas'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'murid') throw 'tidak memiliki akses'
+            
+            //get batch
+            const result = await tugasSubmit.findAll({where:{id_tugas: id, id_murid: token.id_murid}})
+
+            res.json({
+                success: true,
+                message: 'daftar tugas submit',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
     static async addTugas(req, res, next) {
         try {
             //input
@@ -155,7 +188,7 @@ class Murid {
             //proses kirim ujian
             const result = tugasSubmit.create({
                 id_tugas: id,
-                id_murid: req.body.id,
+                id_murid: token.id_murid,
                 submit_date: new Date(),
                 submit_link: req.body.link
             })
@@ -192,6 +225,29 @@ class Murid {
             res.json({
                 success: true,
                 message: 'berhasil mengirim ujian',
+                data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async listUjianSubmit(req, res, next){
+        try {
+            //input
+            let id = req.params.id
+            if(!id) throw 'masukkan id ujian'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'murid') throw 'tidak memiliki akses'
+            
+            //get batch
+            const result = await ujianSubmit.findAll({where:{id_ujian: id, id_murid: token.id_murid}})
+
+            res.json({
+                success: true,
+                message: 'daftar ujian submit',
                 data: result
             })
         } catch (error) {
