@@ -77,9 +77,10 @@ router.post('/guru/addScoreUjian/:id', guru.addScoreUjian)
 
 //murid
 router.get('/murid/dataUjian', murid.dataUjian)
-router.get('/murid/dataAbsenMateri', murid.dataAbsenMateri)
+router.get('/murid/dataPertemuan', murid.dataPertemuan)
+router.post('/murid/detailPertemuan/:id', murid.detailPertemuan)
 router.get('/murid/listTugasSubmit/:id', murid.listTugasSubmit)
-router.post('/murid/addTugas/:id', murid.addTugas)
+router.post('/murid/updateTugas/:id', murid.updateTugas)
 router.get('/murid/listUjianSubmit/:id', murid.listUjianSubmit)
 router.post('/murid/addUjian/:id', murid.addUjian)
 

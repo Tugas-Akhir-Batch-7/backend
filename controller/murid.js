@@ -67,7 +67,7 @@ class Murid {
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
-    static async dataAbsenMateri(req, res, next){
+    static async dataPertemuan(req, res, next){
         try {            
             //ambil token
             const token = verify(req.headers.token)
@@ -79,27 +79,65 @@ class Murid {
                     pertemuan.name,
                     pertemuan.ket,
                     pertemuan.date,
-                    absensi.id_murid,
-                    absensi.id_pertemuan,
+                    absensi.id_murid as absen,
                     pertemuan.id
                 FROM
                     murid INNER JOIN pertemuan on murid.id_batch = pertemuan.id_batch AND murid.id = ${token.id_murid}
                     LEFT JOIN absensi on absensi.id_pertemuan = pertemuan.id And absensi.id_murid = ${token.id_murid}
                 ORDER BY pertemuan.date DESC
             `))[0]
-            for (let i = 0; i < dataAbsen.length; i++) {
-                if(new Date(dataAbsen[i].date) > new Date()) continue
-                dataAbsen[i].tugas = []
-                dataAbsen[i].tugas = (await Tugas.findAll({where:{id_pertemuan:dataAbsen[i].id}}))
-                dataAbsen[i].file = []
-                if(!dataAbsen[i].id_murid) continue
-                dataAbsen[i].file = (await PertemuanFile.findAll({where:{id_pertemuan:dataAbsen[i].id_pertemuan}}))
-            }
+            // for (let i = 0; i < dataAbsen.length; i++) {
+            //     if(new Date(dataAbsen[i].date) > new Date()) continue
+            //     dataAbsen[i].tugas = []
+            //     dataAbsen[i].tugas = (await Tugas.findAll({where:{id_pertemuan:dataAbsen[i].id}}))
+            //     dataAbsen[i].file = []
+            //     if(!dataAbsen[i].id_murid) continue
+            //     dataAbsen[i].file = (await PertemuanFile.findAll({where:{id_pertemuan:dataAbsen[i].id_pertemuan}}))
+            // }
             
             res.json({
                 success: true,
                 message: 'menampilkan daftar absensi',
                 data: dataAbsen
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    static async detailPertemuan(req, res, next){
+        try {
+            //input
+            const id = req.params.id
+            if(!id) throw 'masukkan id pertemuan 123'
+            const absen = req.body.absen == 'hadir' ? false:true
+            console.log('==========')
+            console.log( req.body.absen)
+            
+            // throw 'jalan'
+
+            // ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'murid') throw 'tidak memiliki akses'
+            
+            const materi = absen || await PertemuanFile.findAll({where:{id_pertemuan:id}})
+            const tugas = (await sequelize.query(`
+                SELECT 
+                    tugas.id as id_tugas,
+                    tugas."name" ,
+                    tugas.description ,
+                    tugas_submission.score ,
+                    tugas_submission.submit_date ,
+                    tugas_submission.submit_link 
+                FROM 
+                    tugas LEFT JOIN tugas_submission ON tugas_submission.id_murid = ${token.id_murid} and tugas.id = tugas_submission.id_tugas
+                WHERE tugas.id_pertemuan = ${id}
+            `))[0]
+
+            res.json({
+                success: true,
+                message: 'daftar tugas submit',
+                data: {materi, tugas}
             })
         } catch (error) {
             console.log(error)
@@ -174,7 +212,7 @@ class Murid {
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
-    static async addTugas(req, res, next) {
+    static async updateTugas(req, res, next) {
         try {
             //input
             let id = req.params.id
@@ -185,17 +223,22 @@ class Murid {
             const token = verify(req.headers.token)
             if(token.role != 'murid') throw 'anda bukan murid'
 
-            //proses kirim ujian
-            const result = tugasSubmit.create({
-                id_tugas: id,
-                id_murid: token.id_murid,
-                submit_date: new Date(),
-                submit_link: req.body.link
-            })
+            //update tugas submit
+            let result = await tugasSubmit.update({submit_link: req.body.link}, {where:{id_murid: token.id_murid,id_tugas: id}})
+            //buat tugas submit
+            if(result[0] == 0){
+                result = await tugasSubmit.create({
+                    id_tugas: id,
+                    id_murid: token.id_murid,
+                    submit_date: new Date(),
+                    submit_link: req.body.link
+                })
+
+            }
             
             res.json({
                 success: true,
-                message: 'berhasil mengirim tugas',
+                message: 'berhasil mengupdate tugas',
                 data: result
             })
         } catch (error) {
