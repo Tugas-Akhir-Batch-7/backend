@@ -74,18 +74,105 @@ class Murid {
             if(token.role != "murid") throw 'anda bukan murid'
 
             //ambil data
-            const dataAbsen = (await sequelize.query(`
-                SELECT 
-                    pertemuan.name,
-                    pertemuan.ket,
-                    pertemuan.date,
-                    absensi.id_murid as absen,
-                    pertemuan.id
-                FROM
-                    murid INNER JOIN pertemuan on murid.id_batch = pertemuan.id_batch AND murid.id = ${token.id_murid}
-                    LEFT JOIN absensi on absensi.id_pertemuan = pertemuan.id And absensi.id_murid = ${token.id_murid}
-                ORDER BY pertemuan.date DESC
+            let dataPertemuan = (await sequelize.query(`
+            select 
+              p.id as id_pertemuan, p."name" as name_pertemuan, p.ket as ket_pertemuan, p."date" ,
+              a.id as absen,
+              pf.id as id_file, pf.file , pf.ket as ket_file,
+              t.id as id_tugas, t."name" as name_tugas , t.description ,
+              ts.id as id_submit , ts.score , ts.submit_date , ts.submit_link 
+            from murid m 
+              join pertemuan p on m.id_batch = p.id_batch  
+              left join absensi a on p.id = a.id_pertemuan and a.id_murid = 71
+              left join pertemuan_file pf ON p.id = pf.id_pertemuan 
+              left join tugas t on p.id = t.id_pertemuan
+              left join tugas_submission ts on t.id = ts.id_tugas and ts.id_murid = 71
+            where m.id = 71
+            order by p."date" desc, t.created_at desc, pf.created_at 
             `))[0]
+
+            let data = []
+            for (let i = 0; i < dataPertemuan.length; i++) {
+              //p = data oertemuan (hasil query)
+              //d = data (hasil proses)
+              const p = dataPertemuan[i]
+              let newP = true
+              // if(!data.includes(p.name_pertemuan)) data.push(p.name_pertemuan)
+              for (let u = 0; u < data.length; u++) {
+                const d = data[u]
+                if(d.id == p.id_pertemuan){ //pertemuan telah tersedia
+                  newP = false
+                  let newF = true
+                  let newT = true
+                  // === file
+                  for (let o = 0; o < d.file.length; o++) {
+                    //file telah tersedia
+                    if(d.file[o].id == p.id_file) newF = false
+                  }
+                  if(newF && p.id_file && p.absen && p.date <= new Date()) { //membuat pertemuan
+                    data[u].file.push({
+                      id: p.id_file,
+                      file: p.file,
+                      ket: p.ket_file,
+                    })
+                  }
+                  // === tugas
+                  for (let o = 0; o < d.tugas.length; o++) {
+                    //tugas telah tersedia
+                    if(d.tugas[o].id == p.id_tugas) newT = false
+                  }
+                  if(newT && p.id_tugas && p.date <= new Date()) { //membuat pertemuan
+                    data[u].tugas.push({
+                      id: p.id_tugas,
+                      name: p.name_tugas,
+                      description: p.description,
+                      id_submit: p.id_submit,
+                      score: p.score,
+                      submit_date: p.submit_date,
+                      submit_link: p.submit_link,
+                    })
+                  }
+                }
+              }
+              // === pertemuan
+              if(newP) { //membuat pertemuan
+                data.push({
+                  id: p.id_pertemuan,
+                  name: p.name_pertemuan,
+                  ket: p.ket_pertemuan,
+                  date: p.date,
+                  absen: p.absen,
+                  file: p.id_file && p.absen && p.date <= new Date()?[{
+                    id: p.id_file,
+                    file: p.file,
+                    ket: p.ket_file,
+                  }] : [],
+                  tugas: p.id_tugas && p.date <= new Date()?[{
+                    id: p.id_tugas,
+                    name: p.name_tugas,
+                    description: p.description,
+                    id_submit: p.id_submit,
+                    score: p.score,
+                    submit_date: p.submit_date,
+                    submit_link: p.submit_link,
+                  }] : [],
+                })
+              }
+            }
+            console.log(data.length)
+
+            // const dataAbsen = (await sequelize.query(`
+            //     SELECT 
+            //         pertemuan.name,
+            //         pertemuan.ket,
+            //         pertemuan.date,
+            //         absensi.id_murid as absen,
+            //         pertemuan.id
+            //     FROM
+            //         murid INNER JOIN pertemuan on murid.id_batch = pertemuan.id_batch AND murid.id = ${token.id_murid}
+            //         LEFT JOIN absensi on absensi.id_pertemuan = pertemuan.id And absensi.id_murid = ${token.id_murid}
+            //     ORDER BY pertemuan.date DESC
+            // `))[0]
             // for (let i = 0; i < dataAbsen.length; i++) {
             //     if(new Date(dataAbsen[i].date) > new Date()) continue
             //     dataAbsen[i].tugas = []
@@ -98,7 +185,7 @@ class Murid {
             res.json({
                 success: true,
                 message: 'menampilkan daftar absensi',
-                data: dataAbsen
+                data
             })
         } catch (error) {
             console.log(error)

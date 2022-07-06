@@ -85,11 +85,6 @@ class Guru{
             if(token.role != 'guru') throw 'tidak memiliki akses'
 
             //get batch
-            // const result = await batch.findAll({where:{id_guru:token.id_guru}})
-            // const result = (await sequelize.query(`
-            //     SELECT *, TO_CHAR(start_date, 'YYYY-MM-DD') AS date
-            //     FROM batch ORDER BY start_date DESC`
-            // ))[0]
             const result = (await sequelize.query(`
                 SELECT *, TO_CHAR(start_date, 'YYYY-MM-DD') AS date
                 FROM batch WHERE id_guru = ${token.id_guru} ORDER BY start_date DESC`
@@ -99,6 +94,30 @@ class Guru{
                 success: true,
                 message: 'daftar batch',
                 data: result
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    //daftar batch satuan
+    static async listBatchSatuan(req, res, next){
+        try {
+            //validasi
+            let id = req.params.id
+            if(!id) throw 'masukkan id batch'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
+
+            //get batch
+            const data = await batch.findOne({where:{id_guru:token.id_guru, id}})
+
+            res.json({
+                success: true,
+                message: 'daftar batch satuan',
+                data
             })
         } catch (error) {
             console.log(error)
@@ -901,14 +920,34 @@ class Guru{
                 WHERE id_batch = ${id} 
                 order by date desc
             `))[0] || null
-            // let data = await ujian.findAll({
-            //     attributes:['id','id_batch', 'pengawas', 'name', 'date', 'time'],
-            //     where:{id_batch:id}
-            // }) || null
             
             res.json({
                 success: true,
                 message: 'menampilkan daftar petemuan',
+                data
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    //daftar ujian satuan
+    static async ujianSatuan(req, res, next){
+        try {
+            //validasi
+            let id = req.params.id
+            if(!id) throw 'masukkan id ujian'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
+
+            //get ujian
+            const data = await ujian.findOne({where:{id}})
+
+            res.json({
+                success: true,
+                message: 'daftar ujian satuan',
                 data
             })
         } catch (error) {
