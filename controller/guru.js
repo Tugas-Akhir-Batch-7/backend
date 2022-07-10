@@ -499,13 +499,11 @@ class Guru{
             let file = req.files.file || null
             let ketFile = req.body.ketFile || []
             let id = req.params.id
-            console.log(file)
 
             //validasi
             if(!file) throw 'tidak ada file'
             if(!id) throw "masukkan id pertemuan"
             if(!Array.isArray(ketFile)) ketFile = [ketFile]
-            console.log(ketFile)
             
             //ambil token
             const token = verify(req.headers.token)
