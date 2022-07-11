@@ -113,6 +113,9 @@ class User {
             if (role == 'murid') {
                 //variabel
                 const { address, contact, birthday } = req.body
+                const id_batch = req.body.id_batch || 1
+                console.log("ini id batch")
+                console.log(id_batch)
 
                 //proses
                 if (!(address && contact && birthday)) throw 'masukkan semua data murid'
@@ -128,7 +131,8 @@ class User {
                     photo_ktp: ktp,
                     address,
                     contact,
-                    birthday_date: birthday
+                    birthday_date: birthday,
+                    id_batch
                 }, { transaction: t })
             } else if (role == 'admin' || role == 'guru') {
                 resUser = await user.create({ name, email, password, role, photo: profile }, { transaction: t })
@@ -633,7 +637,21 @@ class User {
     static async getAvailableBatch(req, res, next) {
         try {
            
-         
+            let batchGet = await batch.findAll({
+                attributes: ['id', 'name'],
+                where: {
+                    start_date: {
+                        [Op.gt]: new Date()
+                    }
+                }
+            })
+            
+            console.log(batchGet)
+            return res.status(200).json({
+                success: true,
+                message: 'data batch berhasil diambil',
+                data: batchGet
+            })
             // console.log("All users:", JSON.stringify(users, null, 2));
             // res.send(req.params.id)
         } catch (error) {

@@ -32,6 +32,8 @@ router.post('/resetOtpByEmail', user.createOtpResetByEmail)
 router.post('/confirmOtp', user.confirmOtp)
 router.post('/resetPass', user.resetPasswordWithoutLogin)
 
+router.get('/available-batch', user.getAvailableBatch)
+
 
 //guru
 router.get('/guru/listGuru', guru.listGuru)
