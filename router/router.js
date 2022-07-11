@@ -28,6 +28,11 @@ router.post('/resetOtp', user.createOtpReset)
 router.post('/validResetOtp', user.validResetOtp)
 router.post('/resetPassword', user.resetPassword)
 
+router.post('/resetOtpByEmail', user.createOtpResetByEmail)
+router.post('/confirmOtp', user.confirmOtp)
+router.post('/resetPass', user.resetPasswordWithoutLogin)
+
+
 //guru
 router.get('/guru/listGuru', guru.listGuru)
 
