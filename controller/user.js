@@ -19,6 +19,7 @@ const admin = db.Admin
 const guru = db.Guru
 const otpRegistrasi = db.Otp_registrasi
 const totp = db.Otp
+const batch = db.Batch
 
 const timeOtp = 150 //minute
 
@@ -478,14 +479,24 @@ class User {
             let userGet = await user.findByPk(id)
 
             if (!userGet) throw ApiError.badRequest("User tidak ditemukan")
-            console.log(userGet.role)
+            // console.log(userGet.role)
+
+            userGet = userGet.toJSON()
             let profile
+            let batchGet
             if (userGet.role === 'murid') {
                 console.log("sini")
                 profile = await murid.findOne({
                     where: { id_user: id },
-                    attributes: ['address', 'birthday_date', 'status', 'id_batch'],
+                    attributes: ['address', 'birthday_date', 'status', 'id_batch', 'photo_ktp', 'contact'],
                 })
+                batchGet = await batch.findOne({
+                    where: { id: profile.id_batch },
+                })
+                // batchGet = batchGet.dataValues
+                userGet.batch = batchGet.name
+                // console.log(batchGet)
+
             } else if (userGet.role == "admin") {
                 profile = await admin.findOne({
                     where: { id_user: id },
@@ -497,7 +508,6 @@ class User {
             }
 
             profile = profile.toJSON()
-            userGet = userGet.toJSON()
             userGet.profile = profile
             userGet.password = undefined
             console.log(userGet)
@@ -544,7 +554,8 @@ class User {
                 // console.log("sini")
                 profileUpdated = await murid.update({
                     address: req.body.address,
-                    birthday_date: req.body.birthday_date,
+                    contact: req.body.contact,
+                    // birthday_date: req.body.birthday_date,
                 },
                     {
                         returning: true,
@@ -617,6 +628,20 @@ class User {
             throw error
         }
 
+    }
+
+    static async getAvailableBatch(req, res, next) {
+        try {
+           
+         
+            // console.log("All users:", JSON.stringify(users, null, 2));
+            // res.send(req.params.id)
+        } catch (error) {
+            next(error)
+            // console.log(error)
+            // res.status(400).send('terjadi error')
+
+        }
     }
 
 }
