@@ -43,6 +43,7 @@ router.delete('/guru/deleteBatch/:id', guru.deleteBatch)
 //pertemuan
 router.post('/guru/addPertemuan/:id', multer, guru.addPertemuan)
 router.get('/guru/listPertemuan', guru.listPertemuan)
+router.get('/guru/listPertemuanBatch/:id', guru.listPertemuanBatch)
 router.get('/guru/listJadwalPertemuan', guru.listJadwalPertemuan) 
 router.put('/guru/updatePertemuan/:id', guru.updatePertemuan)
 router.delete('/guru/deletePertemuan/:id', guru.deletePertemuan)

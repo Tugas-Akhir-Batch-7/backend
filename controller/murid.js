@@ -47,6 +47,7 @@ class Murid {
             from murid m  
                 inner join ujian u  on m.id_batch = u.id_batch and m.id = ${token.id_murid}
                 left join ujian_submission us2  ON m.id = us2.id_murid and u.id = us2.id_ujian 
+            WHERE m.status = 'terdaftar' or m.status = 'alumni'
             ORDER BY u.date DESC
             `))[0]
 
@@ -89,7 +90,7 @@ class Murid {
               left join pertemuan_file pf ON p.id = pf.id_pertemuan 
               left join tugas t on p.id = t.id_pertemuan
               left join tugas_submission ts on t.id = ts.id_tugas and ts.id_murid = 71
-            where m.id = 71
+            WHERE m.id = ${token.id_murid} AND (m.status = 'terdaftar' or m.status = 'alumni')
             order by p."date" desc, t.created_at desc, pf.created_at 
             `))[0]
 

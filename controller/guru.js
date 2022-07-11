@@ -350,21 +350,46 @@ class Guru{
                     inner join users on guru.id_user  = users.id
                 where guru.id = '${token.id_guru}' or batch.id_guru = '${token.id_guru}'
                 ORDER BY date DESC
-                `)
-            // CONCAT(TO_CHAR(pertemuan.date, 'YYYY-MM-DD'),'T', TO_CHAR(pertemuan.date, 'HH24:MI')) AS datetime
-            // let data = await sequelize.query(`
-            //     SELECT 
-            //         batch.name AS "name_batch",
-            //         pertemuan.name AS "name_pertemuan",
-            //         pertemuan.ket AS "keterangan",
-            //         pertemuan.date AS "date",
-            //         guru.id AS "id guru",
-            //         batch.id AS "id batch",
-            //         pertemuan.id AS "id_pertemuan"
-            //     FROM 
-            //         guru INNER JOIN batch ON guru.id = batch.id_guru AND guru.id = '${token.id_guru}' 
-            //         INNER JOIN pertemuan ON batch.id = pertemuan.id_batch
-            // `)
+            `)
+            
+            res.json({
+                success: true,
+                message: 'menampilkan daftar petemuan',
+                data: data[0]
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
+    //daftar pertemuan per batch
+    static async listPertemuanBatch(req, res, next){
+        try {
+            //validasi
+            if(!req.params.id) throw 'masukkan id pertemuan'
+            const id = req.params.id
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'anda tidak memiliki akses'
+
+            //ambil data
+            let data = await sequelize.query(`
+                SELECT 
+                    pertemuan.name AS "name_pertemuan",
+                    pertemuan.ket AS "keterangan",
+                    pertemuan.date AS "date",
+                    guru.id AS "id guru",
+                    pertemuan.id_guru AS "id_guru_pertemuan",
+                    pertemuan.id_batch as "id_batch_pertemuan",
+                    pertemuan.id AS "id_pertemuan", 
+                    users.name as "name_guru"
+                FROM 
+                    pertemuan inner join guru on guru.id = pertemuan.id_guru  
+                    inner join batch on batch.id = pertemuan.id_batch
+                    inner join users on guru.id_user  = users.id
+                where batch.id = ${id}
+                ORDER BY date DESC
+            `)
             
             res.json({
                 success: true,
