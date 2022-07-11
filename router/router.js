@@ -91,7 +91,7 @@ router.post('/murid/detailPertemuan/:id', murid.detailPertemuan)
 router.get('/murid/listTugasSubmit/:id', murid.listTugasSubmit)
 router.post('/murid/updateTugas/:id', murid.updateTugas)
 router.get('/murid/listUjianSubmit/:id', murid.listUjianSubmit)
-router.post('/murid/addUjian/:id', murid.addUjian)
+router.post('/murid/updateUjian/:id', murid.updateUjian)
 
 router.get('/murid/listBatch', murid.listBatch)
 router.get('/murid/addBatch/:id', murid.addBatch)

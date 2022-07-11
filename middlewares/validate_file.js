@@ -26,14 +26,22 @@ class validate {
     }
     static async validFile(file, folder){
         return new Promise((resolve, reject)=>{
-            //menyimpan data
-            mv(
-                `./public/-/${file.filename}`, 
-                `./public/${folder}/${file.filename}`, 
-                {clobber: false}, 
-                (err) => { if (err) reject('gagal menyimpan gambar')}
-            )
-            resolve(file.filename)
+            //filter tipe data
+            if(file && /jpeg|jpg|png/.test(file.mimetype)) {
+                sharp(`./public/-/${file.filename}`)
+                    .toFile(`./public/${folder}/${file.filename}`)
+                    .then( data => {resolve(file.filename)})
+                    .catch( err => {reject(['gagal menyimpan gambar', err])})
+            }else{
+                // menyimpan data
+                mv(
+                    `./public/-/${file.filename}`, 
+                    `./public/${folder}/${file.filename}`, 
+                    {clobber: false}, 
+                    (err) => { if (err) reject('gagal menyimpan gambar')}
+                )
+                resolve(file.filename)
+            }
         })
     }
 }

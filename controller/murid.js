@@ -34,28 +34,30 @@ class Murid {
 
             //ambil data
             const dataUjian = (await sequelize.query(`
-                SELECT 
-                    ujian.id,
-                    ujian.name,
-                    ujian.pengawas,
-                    ujian.date,
-                    ujian.time,
-                    ujian_submission.submit_link,
-                    ujian_submission.score,
-                    ujian_submission.id_ujian
-                from
-                    murid inner join ujian on murid.id_batch = ujian.id_batch and murid.id = ${token.id_murid}
-                    left join ujian_submission ON murid.id = ujian_submission.id_murid and ujian.id = ujian_submission.id_ujian 
-                ORDER BY ujian.date DESC
+            SELECT 
+                u.id,
+                u.name,
+                u.pengawas,
+                u.date,
+                u.time,
+                us2.submit_link,
+                us2.score,
+                us2.id_ujian,
+                (select count(*) from ujian_submission us where us.id_ujian = u.id and us.score >= us2.score) as rangking
+            from murid m  
+                inner join ujian u  on m.id_batch = u.id_batch and m.id = ${token.id_murid}
+                left join ujian_submission us2  ON m.id = us2.id_murid and u.id = us2.id_ujian 
+            ORDER BY u.date DESC
             `))[0]
+
             // mencari peringkat ujian
-            for (let i = 0; i < dataUjian.length; i++) {
-                dataUjian[i].peringkat = null
-                const peringkat = await UjianSubmission.findAll({attributes:['score', 'id_murid'],order:[['score', 'DESC']], where:{id_ujian: dataUjian[i].id_ujian}})
-                for (let x = 0; x < peringkat.length; x++) {
-                    if(peringkat[x].id_murid == token.id_murid) dataUjian[i].peringkat = x+1
-                }
-            }
+            // for (let i = 0; i < dataUjian.length; i++) {
+            //     dataUjian[i].peringkat = null
+            //     const peringkat = await UjianSubmission.findAll({attributes:['score', 'id_murid'],order:[['score', 'DESC']], where:{id_ujian: dataUjian[i].id_ujian}})
+            //     for (let x = 0; x < peringkat.length; x++) {
+            //         if(peringkat[x].id_murid == token.id_murid) dataUjian[i].peringkat = x+1
+            //     }
+            // }
             
             res.json({
                 success: true,
@@ -333,7 +335,7 @@ class Murid {
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
-    static async addUjian(req, res, next) {
+    static async updateUjian(req, res, next) {
         try {
             //input
             let id = req.params.id
@@ -344,13 +346,25 @@ class Murid {
             const token = verify(req.headers.token)
             if(token.role != 'murid') throw 'anda bukan murid'
             
+            // //proses kirim ujian
+            // const result = ujianSubmit.create({
+            //     id_ujian: id,
+            //     id_murid: token.id_murid,
+            //     submit_date: new Date(),
+            //     submit_link: req.body.link
+            // })
             //proses kirim ujian
-            const result = ujianSubmit.create({
-                id_ujian: id,
-                id_murid: token.id_murid,
-                submit_date: new Date(),
-                submit_link: req.body.link
-            })
+            let result = await ujianSubmit.update({submit_link: req.body.link}, {where:{id_murid: token.id_murid, id_ujian: id}})
+            //buat ujian submit
+            if(result[0] == 0){
+                result = await ujianSubmit.create({
+                    id_ujian: id,
+                    id_murid: token.id_murid,
+                    submit_date: new Date(),
+                    submit_link: req.body.link
+                })
+
+            }
 
             res.json({
                 success: true,
