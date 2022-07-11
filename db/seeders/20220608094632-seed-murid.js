@@ -25,7 +25,7 @@ module.exports = {
             data.push({
             id_user: i+15,
             id_batch: y,
-            photo_ktp: 'https://avatars0.githubusercontent.com/u/43890987?s=460&v=4',
+            photo_ktp: 'https://avatars.githubusercontent.com/u/424443?v=4',
             address: `Jl. Raya no:${i}`,
             contact,
             birthday_date: new Date(),

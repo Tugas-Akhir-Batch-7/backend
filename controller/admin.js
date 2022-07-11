@@ -59,7 +59,7 @@ const getAllMurid = async (req, res, next) => {
                 SELECT murid.id, users.name, batch.pay from murid
                 JOIN users ON murid.id_user = users.id
                 JOIN batch ON murid.id_batch = batch.id
-                WHERE status='mendaftar'
+                WHERE status='belum mendaftar'
                 `,
                 {
                     replacements: {
@@ -206,7 +206,14 @@ const createTagihan = async (req, res, next) => {
             amount: dp,
             date: new Date(),
         }, { transaction: t })
-
+        await Murid.update({
+            status: 'mendaftar'
+        }, {
+            where: {
+                id: id_murid
+            },
+            transaction: t
+        })
         const tagihanJSON = tagihan.toJSON()
         await t.commit()
         // console.log(tagihan)

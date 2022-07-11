@@ -19,6 +19,7 @@ const admin = db.Admin
 const guru = db.Guru
 const otpRegistrasi = db.Otp_registrasi
 const totp = db.Otp
+const batch = db.Batch
 
 const timeOtp = 150 //minute
 
@@ -112,6 +113,9 @@ class User {
             if (role == 'murid') {
                 //variabel
                 const { address, contact, birthday } = req.body
+                const id_batch = req.body.id_batch || 1
+                console.log("ini id batch")
+                console.log(id_batch)
 
                 //proses
                 if (!(address && contact && birthday)) throw 'masukkan semua data murid'
@@ -127,7 +131,8 @@ class User {
                     photo_ktp: ktp,
                     address,
                     contact,
-                    birthday_date: birthday
+                    birthday_date: birthday,
+                    id_batch
                 }, { transaction: t })
             } else if (role == 'admin' || role == 'guru') {
                 resUser = await user.create({ name, email, password, role, photo: profile }, { transaction: t })
@@ -290,6 +295,7 @@ class User {
             res.status(400).json({ success: false, message: 'terjadi error', error })
         }
     }
+
     static async validResetOtp(req, res, next) {
         try {
             if (!req.body.otp) throw 'masukkan otp'
@@ -347,6 +353,123 @@ class User {
             res.status(400).json({ success: false, message: 'terjadi error', error })
         }
     }
+
+    static async createOtpResetByEmail(req, res, next) {
+        try {
+            const { email } = req.body
+            if (!email) throw ApiError.badRequest('email is required')
+
+            const userGet = await user.findOne({ where: { email } })
+            if (!userGet) throw ApiError.badRequest('email tidak ditemukan')
+            // console.log(userGet.id)
+            //otp
+            let otp = 0
+            while (otp < 100000 || otp > 999999) {
+                otp = Math.ceil(Math.random() * 1000000)
+            }
+
+            //kirim data otp ke database
+            await sequelize.query(`INSERT INTO "otp" 
+             ("id_user", "otp", "valid_until", "updated_at", "created_at")
+             VALUES (?,?,?,?,?)
+             ON CONFLICT ("id_user")
+             DO UPDATE SET
+                 "otp" = EXCLUDED."otp",
+                 "valid_until" = EXCLUDED.valid_until,
+                 "updated_at" = EXCLUDED.updated_at;`,
+                {
+                    replacements: [userGet.id, otp, new Date(new Date().getTime() + (1000 * 60 * timeOtp)).toISOString(), new Date().toISOString(), new Date().toISOString()],
+                    type: QueryTypes.UPSERT
+                }
+            )
+
+            //kirim otp via email
+            mailOptions.to = userGet.email
+            mailOptions.text = `code otp\n${otp}`
+            mail.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                    console.log(err)
+                    throw 'error saat kirim otp via email'
+                }
+            })
+            res.json({
+                success: true,
+                message: 'berhasil mengirim otp reset password'
+            })
+
+        } catch (error) {
+            next(error)
+        }
+
+    }
+
+    static async confirmOtp(req, res, next) {
+        try {
+
+            if (!req.body.otp) throw ApiError.badRequest('masukkan otp')
+            if (!req.body.email) throw ApiError.badRequest('masukkan email')
+
+            const otpGet = await totp.findOne({ where: { otp: req.body.otp } })
+            if (!otpGet) throw ApiError.badRequest('otp invalid')
+
+            const userGet = await user.findOne({
+                where: {
+                    id: otpGet.id_user,
+                }
+            })
+
+            if (userGet.email !== req.body.email) throw ApiError.badRequest('otp invalid')
+
+            return res.status(200).json({
+                success: true,
+                message: 'otp valid'
+            })
+
+
+        } catch (error) {
+            next(error)
+        }
+    }
+
+    static async resetPasswordWithoutLogin(req, res, next) {
+        try {
+            let { otp, password, email } = req.body
+            if (!(otp)) throw ApiError.badRequest('masukkan otp')
+            if (!(password)) throw ApiError.badRequest('masukkan password')
+            if (!(email)) throw ApiError.badRequest('masukkan email')
+
+            const userGet = await user.findOne({ where: { email } })
+            if (!userGet) throw ApiError.badRequest('email tidak ditemukan')
+            const id = userGet.id
+            // return res.send(userGet)
+
+
+            //ambil token
+            // const token = verify(req.headers.token)
+            // const { id, role, email } = token
+
+            //verifikasi lebih lanjut
+            if (!(await totp.findOne({ where: { id_user: id, otp } }))) throw ApiError.badRequest('otp atau id salah')
+
+            //mengubah password
+            await user.update({ password: bcrypt.hashSync(password, 10) }, { where: { id } })
+
+            //menghapus data otp jika sudah register
+            await totp.destroy({where: {id_user: id}})
+
+
+
+            res.json({
+                success: true,
+                message: 'password berhasil diganti',
+                // token: tokenRes
+            })
+        } catch (error) {
+            next(error)
+        }
+    }
+
+
     static async profile(req, res, next) {
         try {
             // console.log(await user.findAll()
@@ -360,14 +483,24 @@ class User {
             let userGet = await user.findByPk(id)
 
             if (!userGet) throw ApiError.badRequest("User tidak ditemukan")
-            console.log(userGet.role)
+            // console.log(userGet.role)
+
+            userGet = userGet.toJSON()
             let profile
+            let batchGet
             if (userGet.role === 'murid') {
                 console.log("sini")
                 profile = await murid.findOne({
                     where: { id_user: id },
-                    attributes: ['address', 'birthday_date', 'status', 'id_batch'],
+                    attributes: ['address', 'birthday_date', 'status', 'id_batch', 'photo_ktp', 'contact'],
                 })
+                batchGet = await batch.findOne({
+                    where: { id: profile.id_batch },
+                })
+                // batchGet = batchGet.dataValues
+                userGet.batch = batchGet.name
+                // console.log(batchGet)
+
             } else if (userGet.role == "admin") {
                 profile = await admin.findOne({
                     where: { id_user: id },
@@ -379,7 +512,6 @@ class User {
             }
 
             profile = profile.toJSON()
-            userGet = userGet.toJSON()
             userGet.profile = profile
             userGet.password = undefined
             console.log(userGet)
@@ -426,7 +558,8 @@ class User {
                 // console.log("sini")
                 profileUpdated = await murid.update({
                     address: req.body.address,
-                    birthday_date: req.body.birthday_date,
+                    contact: req.body.contact,
+                    // birthday_date: req.body.birthday_date,
                 },
                     {
                         returning: true,
@@ -499,6 +632,34 @@ class User {
             throw error
         }
 
+    }
+
+    static async getAvailableBatch(req, res, next) {
+        try {
+           
+            let batchGet = await batch.findAll({
+                attributes: ['id', 'name'],
+                where: {
+                    start_date: {
+                        [Op.gt]: new Date()
+                    }
+                }
+            })
+            
+            console.log(batchGet)
+            return res.status(200).json({
+                success: true,
+                message: 'data batch berhasil diambil',
+                data: batchGet
+            })
+            // console.log("All users:", JSON.stringify(users, null, 2));
+            // res.send(req.params.id)
+        } catch (error) {
+            next(error)
+            // console.log(error)
+            // res.status(400).send('terjadi error')
+
+        }
     }
 
 }
