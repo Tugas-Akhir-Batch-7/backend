@@ -454,7 +454,8 @@ class Guru{
             const id = req.params.id
 
             //delete pertemuan
-            const result = await pertemuan.destroy({where:{id, id_guru:token.id_guru}})
+            const result = await pertemuan.destroy({where:{id}})
+            // const result = await pertemuan.destroy({where:{id, id_guru:token.id_guru}})
 
             res.json({
                 success: true,
