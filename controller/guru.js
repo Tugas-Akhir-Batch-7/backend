@@ -362,6 +362,43 @@ class Guru{
             res.status(400).json({ success: false, message:'terjadi error', error})
         }
     }
+    //daftar pertemuan satuan
+    static async pertemuanSatuan(req, res, next){
+        try {
+            //validasi
+            let id = req.params.id
+            if(!id) throw 'masukkan id pertemuan'
+
+            //ambil token
+            const token = verify(req.headers.token)
+            if(token.role != 'guru') throw 'tidak memiliki akses'
+
+            //get pertemuan
+            //ambil data
+            let data =( await sequelize.query(`
+                SELECT 
+                    p."name" AS "name_pertemuan",
+                    p.ket ,
+                    p."date" ,
+                    u."name" AS "name_guru" 
+                FROM pertemuan p 
+                    join guru g ON g.id = p.id_guru and p.id  = ${id}
+                    join users u ON u.id = g.id_user 
+                LIMIT 1
+            `))[0][0]
+            console.log(data)
+            // const data = await pertemuan.findOne({where:{id}})
+
+            res.json({
+                success: true,
+                message: 'daftar pertemuan satuan',
+                data
+            })
+        } catch (error) {
+            console.log(error)
+            res.status(400).json({ success: false, message:'terjadi error', error})
+        }
+    }
     //daftar pertemuan per batch
     static async listPertemuanBatch(req, res, next){
         try {

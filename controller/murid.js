@@ -47,7 +47,7 @@ class Murid {
             from murid m  
                 inner join ujian u  on m.id_batch = u.id_batch and m.id = ${token.id_murid}
                 left join ujian_submission us2  ON m.id = us2.id_murid and u.id = us2.id_ujian 
-            WHERE m.status = 'terdaftar' or m.status = 'alumni'
+            WHERE m.status = 'terdaftar' or m.status = 'alumni' 
             ORDER BY u.date DESC
             `))[0]
 
