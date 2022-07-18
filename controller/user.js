@@ -95,7 +95,7 @@ class User {
             const { name, email, otp } = req.body;
             const role = req.body.role || 'murid'
             let resUser, resRole, profile
-
+ 
             //validasi
             if (!(name && req.body.password && email && otp)) throw 'masukkan semua data'
             //cek otp
@@ -112,13 +112,9 @@ class User {
 
             if (role == 'murid') {
                 //variabel
-                const { address, contact, birthday } = req.body
-                const id_batch = req.body.id_batch || 1
-                console.log("ini id batch")
-                console.log(id_batch)
-
+                const { address, contact, birthday, id_batch } = req.body
                 //proses
-                if (!(address && contact && birthday)) throw 'masukkan semua data murid'
+                if (!(address && contact && birthday && id_batch)) throw 'masukkan semua data murid'
                 //image process ktp
                 if (!req.files.ktp) throw 'masukkan ktp'
                 let ktp = await validFile.validKtp(req.files.ktp[0])
@@ -171,11 +167,12 @@ class User {
     }
     static async createOtpRegister(req, res, next) {
         try {
+            const { Op } = require("sequelize");
             //variabel
             let emailOtp
             const email = req.body.email
             const role = req.body.role || 'murid'
-            const usernameAdmin = req.body.usernameAdmin
+            const userInvit = req.body.userInvit
 
             //cek email
             if (!(email)) throw 'isi email'
@@ -186,8 +183,9 @@ class User {
                     emailOtp = SU.email
                     break;
                 case 'guru':
-                    if (!usernameAdmin) throw 'masukkan username admin untuk menerima otp'
-                    if (!(emailOtp = (await user.findOne({ where: { name: usernameAdmin, role: 'admin' } })))) throw 'username admin tidak ada'
+                    if (!userInvit) throw 'masukkan username invit untuk menerima otp'
+                    // console.log(await user.findAll({where: {role: 'guru'}}))
+                    if (!(emailOtp = (await user.findOne({ where: { name: userInvit, role: {[Op.or]: ['admin', 'guru']}}})))) throw 'username invit tidak ada'
                     emailOtp = emailOtp.email
                     break;
                 case 'murid':

@@ -18,6 +18,8 @@ class validate {
         return new Promise((resolve, reject)=>{
             //filter tipe data
             if(!(image && /jpeg|jpg|png/.test(image.mimetype))) reject(`masukkan ktp`)
+            console.log(image)
+            console.log(image.mimetype)
             sharp(`./public/-/${image.filename}`)
                 .toFile(`./public/img-ktp/${image.filename}`)
                 .then( data => {resolve(image.filename)})

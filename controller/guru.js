@@ -375,7 +375,7 @@ class Guru{
 
             //get pertemuan
             //ambil data
-            let data =( await sequelize.query(`
+            let data = (await sequelize.query(`
                 SELECT 
                     p."name" AS "name_pertemuan",
                     p.ket ,
