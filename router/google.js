@@ -27,7 +27,22 @@ router.get('/callback',
   passport.authenticate('google', { failureRedirect: '/login' }),
   async (req, res) => {
     try{
-      const userGet = await user.findOne({where: {email: req.user.emails[0].value}})
+      // const userGet = await user.findOne({where: {email: req.user.emails[0].value}})
+      const userGet = (await sequelize.query(`
+        select 
+          u.id,
+          u."name" ,
+          u.email ,
+          u.email_verified_at ,
+          u.photo ,
+          u."role", 
+          b."name" as "nama_batch"
+        from users u 
+          join murid m on m.id_user = u.id 
+          join batch b on b.id = m.id_batch 
+        where u.email = '${req.user.emails[0].value}'
+        limit 1
+      `))[0][0]
       console.log(userGet)
       if(userGet){
         //login
