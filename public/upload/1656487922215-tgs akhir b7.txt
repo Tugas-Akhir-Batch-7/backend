@@ -1,0 +1,40 @@
+1. HALAMAN LOGIN
+-ada login biasa ada login menggunakan akun google
+-password tidak boleh di ketahui oleh siapapun termasuk developer
+-jika register menggunakan google maka (murid) => edit profile
+
+2. RESET PASSWORD
+-set reset password pakai otp
+-kirim ke email dan ada kadaluarsa 15menit
+
+3. HALAMAN REGISTER/EDIT
+-username harus email
+-password minimal 8, harus ada kombinasi angka dan huruf kapital
+-terdapat 3 role, yaitu guru,murid,dan admin
+-ada upload foto untuk profil
+-ada upload KTP
+-ada umur > 17 thn
+-field lainnya
+
+4. HALAMAN PROFIL
+-berisi seluruh data user yang login
+-untuk halaman murid ada field batch berapa
+
+5. HALAMAN DASHBOARD
+- admin => list murid dan list guru
+- guru => list murid by batch, menampilkan status murid(mendaftar,total,sedang belajar, alumni, keluar)
+- murid => tabel judul ujian dan nilai dia,kehadiran,rank,pengawas
+           table list piutang pembayaran
+
+6.HALAMAN MATERI
+- guru => upload materi dan input absensi
+- murid => lihat dan download materi, lihat absensi, murid yang tidak berangkat tidak bisa download materi.
+
+7.HALAMAN BILLING
+-admin => crud tarif(ada DP, dan biaya, biaya bisa di cicil,ada input tanggal pembayaran => tidak boleh lebih dari 3 bulan dari start kelas)
+			JIKA DALAM 2 BULAN BERJALAN MASIH ADA SISA BIAYA, OTOMATIS KIRIM EMAIL KE MURID
+
+8.HALAMAN BATCH
+-guru => crud batch yg berisi list batch dan murid dlm batch tersebut
+
+
